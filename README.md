@@ -20,11 +20,15 @@ Completed:
 - Python 3.12 project and dependency setup
 - Installable command-line entry point
 - Baseline CLI tests
+- Versioned synthetic benchmark specification
+- Typed generator and evaluation-manifest contracts
+- Reproducible case-manifest JSON Schema
 
 Next:
 
-- Specify the synthetic benchmark and typed case contracts
-- Generate reproducible 96-well assay cases
+- Implement and audit the balanced 96-well plate layout
+- Implement the clean assay generator
+- Generate the first reproducible assay case
 - Add deterministic QC tools before introducing model-driven decisions
 
 The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.
@@ -131,6 +135,9 @@ The application—not the language model—will enforce tool allowlists, iterati
 - Never ask the model to perform scientific arithmetic that a deterministic tool can perform.
 - Validate every model output that crosses a component boundary.
 - Keep benchmark ground truth separate from investigator-visible inputs.
+- Treat the balanced 96-well design as a benchmark fixture, not an application assumption.
+- Derive plate geometry, controls, doses, and replicate structure from each experiment.
+- Return explicit insufficient-data results when a design cannot support an analysis.
 - Cite evidence identifiers for every conclusion.
 - Treat missing metadata as uncertainty rather than inventing values.
 - Bound model requests, tool calls, retries, and workflow iterations.

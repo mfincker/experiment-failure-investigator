@@ -1,0 +1,390 @@
+{
+  "$defs": {
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "description": "Tamper-evident reference to a serialized case artifact.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "AssayType": {
+      "description": "Assay designs supported by the initial benchmark.",
+      "enum": [
+        "cell_viability_endpoint"
+      ],
+      "title": "AssayType",
+      "type": "string"
+    },
+    "CaseFiles": {
+      "additionalProperties": false,
+      "description": "Required serialized artifacts, excluding the manifest itself.",
+      "properties": {
+        "measurements": {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        "plate_map": {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        "problem_statement": {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        "protocol": {
+          "$ref": "#/$defs/ArtifactReference"
+        }
+      },
+      "required": [
+        "measurements",
+        "plate_map",
+        "metadata",
+        "protocol",
+        "problem_statement"
+      ],
+      "title": "CaseFiles",
+      "type": "object"
+    },
+    "CaseVariant": {
+      "description": "Initial benchmark difficulty variants.",
+      "enum": [
+        "obvious",
+        "noisy"
+      ],
+      "title": "CaseVariant",
+      "type": "string"
+    },
+    "FailureMode": {
+      "description": "Single planted mechanisms in the initial benchmark.",
+      "enum": [
+        "edge_effect",
+        "pipetting_drift",
+        "layout_confounding",
+        "weak_controls",
+        "batch_shift",
+        "true_non_response"
+      ],
+      "title": "FailureMode",
+      "type": "string"
+    },
+    "GeneratorConfig": {
+      "additionalProperties": false,
+      "description": "Versioned configuration for a synthetic benchmark case.\n\nThis is a generator contract, not the future investigator input contract.\nInvestigator code must derive design properties from loaded case data.",
+      "properties": {
+        "assay_type": {
+          "$ref": "#/$defs/AssayType",
+          "default": "cell_viability_endpoint"
+        },
+        "benchmark_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Benchmark Version",
+          "type": "string"
+        },
+        "blank_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Blank Count",
+          "type": "integer"
+        },
+        "case_id": {
+          "minLength": 3,
+          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "case_variant": {
+          "$ref": "#/$defs/CaseVariant"
+        },
+        "curves": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TreatmentCurve"
+          },
+          "title": "Curves",
+          "type": "object"
+        },
+        "doses_micromolar": {
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Doses Micromolar",
+          "type": "array"
+        },
+        "failure_mode": {
+          "$ref": "#/$defs/FailureMode"
+        },
+        "negative_control_count": {
+          "default": 8,
+          "minimum": 1,
+          "title": "Negative Control Count",
+          "type": "integer"
+        },
+        "negative_control_mean": {
+          "default": 1.0,
+          "title": "Negative Control Mean",
+          "type": "number"
+        },
+        "noise_sd": {
+          "minimum": 0,
+          "title": "Noise Sd",
+          "type": "number"
+        },
+        "plate_count": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Plate Count",
+          "type": "integer"
+        },
+        "plate_format": {
+          "$ref": "#/$defs/PlateFormat",
+          "default": "96_well"
+        },
+        "positive_control_count": {
+          "default": 8,
+          "minimum": 1,
+          "title": "Positive Control Count",
+          "type": "integer"
+        },
+        "positive_control_mean": {
+          "default": 0.15,
+          "title": "Positive Control Mean",
+          "type": "number"
+        },
+        "replicates_per_condition": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Replicates Per Condition",
+          "type": "integer"
+        },
+        "root_seed": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "title": "Root Seed",
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "signal_direction": {
+          "$ref": "#/$defs/SignalDirection",
+          "default": "lower_is_stronger"
+        },
+        "treatments": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Treatments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id",
+        "case_variant",
+        "failure_mode",
+        "root_seed",
+        "noise_sd"
+      ],
+      "title": "GeneratorConfig",
+      "type": "object"
+    },
+    "GroundTruth": {
+      "additionalProperties": false,
+      "description": "Private answer-key fields that must never be passed to an investigator.",
+      "properties": {
+        "child_seeds": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Child Seeds",
+          "type": "object"
+        },
+        "injection_parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Injection Parameters",
+          "type": "object"
+        },
+        "mechanism": {
+          "$ref": "#/$defs/FailureMode"
+        },
+        "simulated_traversal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SimulatedTraversal"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "mechanism",
+        "child_seeds",
+        "injection_parameters"
+      ],
+      "title": "GroundTruth",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PlateFormat": {
+      "description": "Standard plate geometries supported by benchmark configurations.",
+      "enum": [
+        "96_well",
+        "384_well"
+      ],
+      "title": "PlateFormat",
+      "type": "string"
+    },
+    "SignalDirection": {
+      "description": "How to interpret movement in the assay signal.",
+      "enum": [
+        "lower_is_stronger"
+      ],
+      "title": "SignalDirection",
+      "type": "string"
+    },
+    "SimulatedTraversal": {
+      "description": "Private synthetic traversals used to inject pipetting drift.",
+      "enum": [
+        "row_major",
+        "column_major",
+        "serpentine_rows",
+        "serpentine_columns"
+      ],
+      "title": "SimulatedTraversal",
+      "type": "string"
+    },
+    "TreatmentCurve": {
+      "additionalProperties": false,
+      "description": "Parameters for a decreasing four-parameter logistic curve.",
+      "properties": {
+        "bottom": {
+          "default": 0.15,
+          "title": "Bottom",
+          "type": "number"
+        },
+        "hill_slope": {
+          "default": 1.2,
+          "exclusiveMinimum": 0,
+          "title": "Hill Slope",
+          "type": "number"
+        },
+        "ic50": {
+          "exclusiveMinimum": 0,
+          "title": "Ic50",
+          "type": "number"
+        },
+        "top": {
+          "default": 1.0,
+          "title": "Top",
+          "type": "number"
+        }
+      },
+      "required": [
+        "ic50"
+      ],
+      "title": "TreatmentCurve",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Evaluation-only manifest for a finalized synthetic case.",
+  "properties": {
+    "assay_type": {
+      "$ref": "#/$defs/AssayType"
+    },
+    "benchmark_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Benchmark Version",
+      "type": "string"
+    },
+    "case_id": {
+      "minLength": 3,
+      "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "case_variant": {
+      "$ref": "#/$defs/CaseVariant"
+    },
+    "expected_discriminating_evidence": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Expected Discriminating Evidence",
+      "type": "array"
+    },
+    "files": {
+      "$ref": "#/$defs/CaseFiles"
+    },
+    "generation": {
+      "$ref": "#/$defs/GeneratorConfig"
+    },
+    "ground_truth": {
+      "$ref": "#/$defs/GroundTruth"
+    },
+    "planted_failure_mode": {
+      "$ref": "#/$defs/FailureMode"
+    },
+    "plausible_confounders": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Plausible Confounders",
+      "type": "array"
+    },
+    "root_seed": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "title": "Root Seed",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "signal_direction": {
+      "$ref": "#/$defs/SignalDirection"
+    }
+  },
+  "required": [
+    "case_id",
+    "case_variant",
+    "root_seed",
+    "assay_type",
+    "signal_direction",
+    "planted_failure_mode",
+    "generation",
+    "ground_truth",
+    "expected_discriminating_evidence",
+    "files"
+  ],
+  "title": "CaseManifest",
+  "type": "object"
+}
