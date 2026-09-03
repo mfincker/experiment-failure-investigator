@@ -1,0 +1,31 @@
+[project]
+name = "experiment-failure-investigator"
+version = "0.1.0"
+description = "A reproducible agentic investigator for synthetic biological assay failures"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "altair>=5.5",
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pydantic>=2.10",
+    "pydantic-ai>=0.8.1",
+    "scipy>=1.14",
+    "vl-convert-python>=1.7",
+]
+
+[project.scripts]
+experiment-failure-investigator = "experiment_failure_investigator.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
