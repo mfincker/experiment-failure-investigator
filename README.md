@@ -1,6 +1,6 @@
 # Agentic Experiment Failure Investigator
 
-A learning project for building and evaluating a scientific investigation agent. The finished application will analyze synthetic plate-based assay failures, run deterministic quality-control tools, compare competing explanations, and recommend the most informative next check or experiment.
+An API-driven scientific reasoning system for investigating failed plate-based biological assays. The application combines deterministic quality-control tools with typed agent workflows to compare competing root-cause hypotheses, surface uncertainty, and recommend the most informative next check or experiment.
 
 The project is intentionally split between scientific computation and language-model reasoning:
 
@@ -9,7 +9,6 @@ The project is intentionally split between scientific computation and language-m
 - Pydantic AI will orchestrate the first agent workflow.
 - LangGraph will later reimplement the same workflow for comparison.
 - Ollama with a local Qwen model will provide inference without per-token API charges.
-- Codex is used to develop and test the repository, but is not part of the application runtime.
 - A human remains responsible for accepting, rejecting, or revising recommendations.
 
 ## Project status
@@ -43,7 +42,7 @@ The MVP uses synthetic 96-well cell-viability or dose-response assays with six p
 
 Initial cases will contain one planted cause. Mixed-cause and deliberately ambiguous cases will be added after the single-cause benchmark is reliable.
 
-All data and scenarios are synthetic. The project is educational and is not intended to make decisions about real laboratory experiments without expert review.
+All data and failure scenarios are synthetic. Recommendations are designed for human review; the system has not been validated for decisions involving real laboratory experiments.
 
 ## Requirements
 
