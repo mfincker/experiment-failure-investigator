@@ -1,0 +1,139 @@
+# Agentic Experiment Failure Investigator
+
+A learning project for building and evaluating a scientific investigation agent. The finished application will analyze synthetic plate-based assay failures, run deterministic quality-control tools, compare competing explanations, and recommend the most informative next check or experiment.
+
+The project is intentionally split between scientific computation and language-model reasoning:
+
+- Python tools calculate statistics and produce traceable evidence.
+- Pydantic models define state and component boundaries.
+- Pydantic AI will orchestrate the first agent workflow.
+- LangGraph will later reimplement the same workflow for comparison.
+- Ollama with a local Qwen model will provide inference without per-token API charges.
+- Codex is used to develop and test the repository, but is not part of the application runtime.
+- A human remains responsible for accepting, rejecting, or revising recommendations.
+
+## Project status
+
+The project is in its initial implementation stage.
+
+Completed:
+
+- Python 3.12 project and dependency setup
+- Installable command-line entry point
+- Baseline CLI tests
+
+Next:
+
+- Specify the synthetic benchmark and typed case contracts
+- Generate reproducible 96-well assay cases
+- Add deterministic QC tools before introducing model-driven decisions
+
+The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.
+
+## Scientific scope
+
+The MVP uses synthetic 96-well cell-viability or dose-response assays with six planted scenarios:
+
+1. Edge effect
+2. Pipetting drift or a similar row/column gradient
+3. Plate-layout confounding
+4. Failed or weak controls
+5. Batch shift
+6. True biological non-response with otherwise acceptable QC
+
+Initial cases will contain one planted cause. Mixed-cause and deliberately ambiguous cases will be added after the single-cause benchmark is reliable.
+
+All data and scenarios are synthetic. The project is educational and is not intended to make decisions about real laboratory experiments without expert review.
+
+## Requirements
+
+- Python 3.12 or newer
+- [uv](https://docs.astral.sh/uv/)
+- Ollama and a compatible local Qwen model later in the project; neither is needed for the current tests
+
+## Setup
+
+Clone the repository, enter its directory, and synchronize the environment:
+
+```bash
+uv sync
+```
+
+If `uv` is installed in its default user location but is not on your shell path, invoke it directly:
+
+```bash
+~/.local/bin/uv sync
+```
+
+Alternatively, add `~/.local/bin` to your shell path or follow the uv installation instructions.
+
+## Run the CLI
+
+Show the available options:
+
+```bash
+uv run experiment-failure-investigator --help
+```
+
+Show the installed project version:
+
+```bash
+uv run experiment-failure-investigator --version
+```
+
+## Run the tests
+
+Run the complete test suite:
+
+```bash
+uv run pytest
+```
+
+Useful variants:
+
+```bash
+# Verbose output
+uv run pytest -v
+
+# CLI tests only
+uv run pytest tests/test_cli.py
+
+# One test
+uv run pytest tests/test_cli.py::test_help_is_available
+```
+
+The deterministic test suite must remain runnable without Ollama, network access, or a remote model API key.
+
+## Planned workflow
+
+```text
+validate inputs
+    -> run deterministic baseline QC
+    -> propose competing hypotheses
+    -> select an allowlisted analysis tool
+    -> challenge the leading explanation
+    -> continue, abstain, or request human review
+    -> produce an evidence-linked report
+```
+
+The application—not the language model—will enforce tool allowlists, iteration limits, timeouts, validation retries, and terminal states.
+
+## Development roadmap
+
+1. Define and generate the scientific benchmark.
+2. Implement typed deterministic analysis tools and a non-agentic baseline.
+3. Add an Ollama-backed Pydantic AI investigator.
+4. Add a bounded skeptic loop and human-review checkpoint.
+5. Port orchestration to LangGraph without changing scientific tools or output contracts.
+6. Evaluate both workflows on labeled synthetic cases and document successes and failures.
+
+## Design principles
+
+- Never ask the model to perform scientific arithmetic that a deterministic tool can perform.
+- Validate every model output that crosses a component boundary.
+- Keep benchmark ground truth separate from investigator-visible inputs.
+- Cite evidence identifiers for every conclusion.
+- Treat missing metadata as uncertainty rather than inventing values.
+- Bound model requests, tool calls, retries, and workflow iterations.
+- Make abstention a valid outcome.
+- Keep model-provider configuration separate from scientific logic.
