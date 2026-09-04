@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from math import isfinite
 from pathlib import PurePosixPath
 from typing import Annotated, Literal
 
@@ -70,7 +71,7 @@ class WellRole(StrEnum):
     NEGATIVE_CONTROL = "negative_control"
     POSITIVE_CONTROL = "positive_control"
     TREATMENT = "treatment"
-    BLANK = "blank"
+    EMPTY = "empty"
 
 
 class FailureMode(StrEnum):
@@ -130,10 +131,10 @@ class WellCoordinate(StrictModel):
 class TreatmentCurve(StrictModel):
     """Parameters for a decreasing four-parameter logistic curve."""
 
-    top: float = 1.0
-    bottom: float = 0.15
-    ic50: float = Field(gt=0)
-    hill_slope: float = Field(default=1.2, gt=0)
+    top: float = Field(default=1.0, allow_inf_nan=False)
+    bottom: float = Field(default=0.15, allow_inf_nan=False)
+    ic50: float = Field(gt=0, allow_inf_nan=False)
+    hill_slope: float = Field(default=1.2, gt=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def validate_asymptotes(self) -> TreatmentCurve:
@@ -170,7 +171,7 @@ class GeneratorConfig(StrictModel):
     plate_count: int = Field(default=1, ge=1)
     negative_control_count: int = Field(default=8, ge=1)
     positive_control_count: int = Field(default=8, ge=1)
-    blank_count: int = Field(default=0, ge=0)
+    empty_count: int = Field(default=0, ge=0)
     treatments: list[str] = Field(
         default_factory=lambda: ["reference_treatment", "test_treatment"],
         min_length=1,
@@ -180,9 +181,9 @@ class GeneratorConfig(StrictModel):
         min_length=1,
     )
     replicates_per_condition: int = Field(default=5, ge=1)
-    negative_control_mean: float = 1.0
-    positive_control_mean: float = 0.15
-    noise_sd: float = Field(ge=0)
+    negative_control_mean: float = Field(default=1.0, allow_inf_nan=False)
+    positive_control_mean: float = Field(default=0.15, allow_inf_nan=False)
+    noise_sd: float = Field(ge=0, allow_inf_nan=False)
     curves: dict[str, TreatmentCurve] = Field(default_factory=default_curves)
 
     @field_validator("treatments")
@@ -197,8 +198,8 @@ class GeneratorConfig(StrictModel):
     @field_validator("doses_micromolar")
     @classmethod
     def validate_doses(cls, value: list[float]) -> list[float]:
-        if any(dose <= 0 for dose in value):
-            raise ValueError("doses must be positive")
+        if any(not isfinite(dose) or dose <= 0 for dose in value):
+            raise ValueError("doses must be finite and positive")
         if len(set(value)) != len(value):
             raise ValueError("doses must be unique")
         if value != sorted(value):
@@ -215,7 +216,7 @@ class GeneratorConfig(StrictModel):
         total_wells = (
             self.negative_control_count
             + self.positive_control_count
-            + self.blank_count
+            + self.empty_count
             + treatment_wells
         )
         if total_wells != self.plate_format.capacity:

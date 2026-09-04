@@ -22,6 +22,13 @@ from experiment_failure_investigator.benchmark.models import (
     WellCoordinate,
     WellRole,
 )
+from experiment_failure_investigator.benchmark.randomness import derive_child_seed
+from experiment_failure_investigator.benchmark.signals import (
+    CleanAssayResult,
+    CleanGenerationMetadata,
+    four_parameter_logistic,
+    generate_clean_assay,
+)
 
 __all__ = [
     "ArtifactReference",
@@ -29,6 +36,8 @@ __all__ = [
     "CaseFiles",
     "CaseManifest",
     "CaseVariant",
+    "CleanAssayResult",
+    "CleanGenerationMetadata",
     "FailureMode",
     "GeneratorConfig",
     "GroundTruth",
@@ -41,5 +50,8 @@ __all__ = [
     "WellRole",
     "audit_layout",
     "build_balanced_layout",
+    "derive_child_seed",
     "enumerate_wells",
+    "four_parameter_logistic",
+    "generate_clean_assay",
 ]

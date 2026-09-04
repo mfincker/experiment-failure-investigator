@@ -24,11 +24,12 @@ Completed:
 - Typed generator and evaluation-manifest contracts
 - Reproducible case-manifest JSON Schema
 - Geometry-aware balanced plate-layout generation and independent audits
+- Deterministic clean assay generation with private latent-signal records
 
 Next:
 
-- Implement the clean assay generator
-- Generate the first reproducible assay case
+- Implement the six pure failure injectors
+- Add case serialization and validation
 - Add deterministic QC tools before introducing model-driven decisions
 
 The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.

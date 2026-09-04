@@ -32,9 +32,25 @@ Use layout fingerprints to keep evaluation layouts separate from layouts used to
 
 **When:** after the initial twelve cases and their failure injectors are reliable.
 
-Add benchmark cases with varied control allocations, dose series, treatment counts, replicate counts, missing wells, blank wells, and no reference treatment. Keep analysis code driven by observed case data rather than MVP defaults.
+Add benchmark cases with varied control allocations, dose series, treatment counts, replicate counts, missing wells, empty wells, and no reference treatment. Keep analysis code driven by observed case data rather than MVP defaults.
 
 **Done when:** these cases run through the same investigator contracts without layout-specific prompt or tool changes.
+
+### Model assay blanks as a distinct well role
+
+**When:** a benchmark case needs wells containing medium, reagent, or another protocol-defined background material.
+
+Add an `assay_blank` role that is distinct from a physically empty well. Its expected readout must be configured per assay and instrument context rather than assigned a universal value. Define how blank subtraction and investigator-visible metadata are represented before generating these cases.
+
+**Done when:** assay blanks have explicit contents and readout semantics, and neither generators nor investigators confuse them with empty positions.
+
+### Add unexpected content in empty wells
+
+**When:** after the initial six single-cause injectors and twelve-case slice are reliable.
+
+Add a failure family in which the reported plate map marks positions as empty but their readouts are inconsistent with empty positions. Treat accidental dispensing, contamination or carryover, plate-map annotation error, optical crosstalk, and instrument behavior as competing explanations unless the case provides discriminating evidence. Avoid attributing the discrepancy to user error without such evidence.
+
+**Done when:** the benchmark can test recognition of the map/measurement inconsistency separately from confident identification of its physical cause, with appropriate abstention or follow-up recommendations.
 
 ### Add plate-format and multi-plate shifts
 

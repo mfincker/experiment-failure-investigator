@@ -81,7 +81,7 @@ Required columns:
 
 - `plate_id`, `well`, `row`, `column`.
 - `sample_id`.
-- `well_role`: `negative_control`, `positive_control`, or `treatment`.
+- `well_role`: `negative_control`, `positive_control`, `treatment`, or `empty`.
 - `treatment`.
 - `dose` and `dose_unit`; controls may use null dose fields.
 - `replicate`.
@@ -136,7 +136,7 @@ Actions:
 - Define enums and Pydantic models for well roles, failure modes, case variants, manifest data, and generator configuration.
 - Document which fields are observable inputs and which are hidden benchmark labels.
 - Document the boundary between fixed MVP fixture parameters and the future flexible investigator input contract.
-- Ensure shared identifiers and geometry types can represent 96- and 384-well plates, different control allocations, blank wells, and cases without a reference treatment.
+- Ensure shared identifiers and geometry types can represent 96- and 384-well plates, different control allocations, empty wells, and cases without a reference treatment.
 - Generate the manifest JSON Schema from the Pydantic model.
 
 Verification:
@@ -185,7 +185,7 @@ Verification:
 - The noiseless dose response is monotonic and bounded by configured asymptotes.
 - No NaN or infinite value appears unless missingness is deliberately injected.
 
-Checkpoint: generate one temporary clean case and inspect its control summary, heatmap, and dose-response plot.
+Checkpoint: generate one temporary clean plate and inspect its control summary and dose-response table. Heatmap and dose-response chart review occurs in Step 7 after the plotting functions exist.
 
 ### 5. Implement six pure failure injectors
 

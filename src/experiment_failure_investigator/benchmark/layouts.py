@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
 from typing import Any
 
 import numpy as np
@@ -14,6 +13,7 @@ from experiment_failure_investigator.benchmark.models import (
     PlateFormat,
     WellRole,
 )
+from experiment_failure_investigator.benchmark.randomness import derive_child_seed
 
 PLATE_MAP_COLUMNS = [
     "plate_id",
@@ -86,18 +86,12 @@ def enumerate_wells(plate_format: PlateFormat) -> pd.DataFrame:
     return pd.DataFrame.from_records(records)
 
 
-def derive_child_seed(root_seed: int, namespace: str) -> int:
-    """Derive a stable uint32 child seed without consuming another stream."""
-    digest = sha256(f"{root_seed}:{namespace}".encode()).digest()
-    return int.from_bytes(digest[:4], byteorder="big", signed=False)
-
-
 def _condition_key(record: dict[str, Any]) -> str:
     role = record["well_role"]
     if role == WellRole.TREATMENT.value:
         return f"{record['treatment']}@{record['dose']:g}"
-    if role == WellRole.BLANK.value:
-        return f"blank:{record['sample_id']}"
+    if role == WellRole.EMPTY.value:
+        return f"empty:{record['sample_id']}"
     return role
 
 
@@ -141,11 +135,11 @@ def _condition_records(config: GeneratorConfig) -> list[dict[str, Any]]:
                         "replicate": replicate,
                     }
                 )
-    for blank_index in range(1, config.blank_count + 1):
+    for empty_index in range(1, config.empty_count + 1):
         records.append(
             {
-                "sample_id": f"blank_{blank_index:02d}",
-                "well_role": WellRole.BLANK.value,
+                "sample_id": f"empty_{empty_index:02d}",
+                "well_role": WellRole.EMPTY.value,
                 "treatment": None,
                 "dose": None,
                 "dose_unit": None,
@@ -413,7 +407,7 @@ def audit_layout(layout: pd.DataFrame, config: GeneratorConfig) -> LayoutAudit:
     coverage: dict[str, dict[str, int]] = {}
     confounding: list[str] = []
     for condition, group in audited.groupby("condition_key", sort=True):
-        if str(condition).startswith("blank"):
+        if str(condition).startswith("empty"):
             continue
         counts = {
             "wells": int(len(group)),
@@ -455,8 +449,8 @@ def audit_layout(layout: pd.DataFrame, config: GeneratorConfig) -> LayoutAudit:
             * config.replicates_per_condition
         ),
     }
-    if config.blank_count:
-        expected_roles[WellRole.BLANK.value] = config.blank_count
+    if config.empty_count:
+        expected_roles[WellRole.EMPTY.value] = config.empty_count
     if role_counts != expected_roles:
         issues.append("well-role counts disagree with generator configuration")
 
@@ -499,8 +493,8 @@ def render_layout_grid(layout: pd.DataFrame) -> str:
             return "NC"
         if row["well_role"] == WellRole.POSITIVE_CONTROL.value:
             return "PC"
-        if row["well_role"] == WellRole.BLANK.value:
-            return "BL"
+        if row["well_role"] == WellRole.EMPTY.value:
+            return "EM"
         dose_index = sorted(labels["dose"].dropna().unique()).index(row["dose"]) + 1
         return f"{treatment_abbreviations[row['treatment']]}D{dose_index}"
 

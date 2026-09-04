@@ -22,6 +22,7 @@ from experiment_failure_investigator.benchmark.models import (
 )
 
 VALID_HASH = "0" * 64
+DEFAULT_DOSES = [0.003, 0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0]
 
 
 def artifact(path: str) -> ArtifactReference:
@@ -128,16 +129,16 @@ def test_plate_design_must_fill_96_wells() -> None:
         valid_config(replicates_per_condition=4)
 
 
-def test_generator_contract_allows_different_control_and_blank_counts() -> None:
+def test_generator_contract_allows_different_control_and_empty_counts() -> None:
     config = valid_config(
         negative_control_count=12,
         positive_control_count=12,
-        blank_count=8,
+        empty_count=8,
         replicates_per_condition=4,
     )
 
     assert config.negative_control_count == 12
-    assert config.blank_count == 8
+    assert config.empty_count == 8
 
 
 def test_generator_contract_does_not_require_reference_treatment() -> None:
@@ -155,7 +156,7 @@ def test_generator_contract_supports_384_well_capacity() -> None:
         plate_format=PlateFormat.WELLS_384,
         negative_control_count=16,
         positive_control_count=16,
-        blank_count=32,
+        empty_count=32,
         replicates_per_condition=20,
     )
 
@@ -163,7 +164,13 @@ def test_generator_contract_supports_384_well_capacity() -> None:
 
 
 def test_doses_must_be_positive_unique_and_sorted() -> None:
-    for doses in ([0.0] * 8, [0.1, 0.1], [1.0, 0.1]):
+    for doses in (
+        [0.0] * 8,
+        [float("nan"), *DEFAULT_DOSES[1:]],
+        [*DEFAULT_DOSES[:-1], float("inf")],
+        [0.1, 0.1],
+        [1.0, 0.1],
+    ):
         with pytest.raises(ValidationError, match="doses"):
             valid_config(doses_micromolar=doses)
 

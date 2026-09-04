@@ -95,12 +95,6 @@
           "title": "Benchmark Version",
           "type": "string"
         },
-        "blank_count": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Blank Count",
-          "type": "integer"
-        },
         "case_id": {
           "minLength": 3,
           "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
@@ -124,6 +118,12 @@
           "minItems": 1,
           "title": "Doses Micromolar",
           "type": "array"
+        },
+        "empty_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Empty Count",
+          "type": "integer"
         },
         "failure_mode": {
           "$ref": "#/$defs/FailureMode"

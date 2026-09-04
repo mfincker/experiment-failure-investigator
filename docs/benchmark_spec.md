@@ -43,7 +43,7 @@ Realistic investigator inputs may differ in all of the following ways:
 - No reference treatment
 - Different dose series between treatments
 - Unequal or missing replicates
-- Blank or intentionally unused wells
+- Empty or intentionally unused wells
 - Multiple plates without a batch failure
 - Missing optional metadata
 
@@ -130,6 +130,8 @@ Default control means:
 - Negative control: `1.00`
 - Positive control: `0.15`
 
+An `empty` well means a physically empty, intentionally unused position. It is not an assay blank containing medium, reagent, or another background-control material. Empty wells have no biological expected signal, and the initial benchmark profile contains none. Until a future instrument-readout policy defines whether empty positions produce a finite value, a missing value, or no measurement row, clean signal generation rejects layouts containing empty wells rather than inventing a value.
+
 For a treatment well at dose `d > 0`, the latent mean follows a decreasing four-parameter logistic curve:
 
 ```text
@@ -149,6 +151,8 @@ Observed signal is the latent mean plus seeded well-level noise:
 observed_signal = expected_signal + Normal(0, noise_sd)
 ```
 
+The generator does not clip observed values to the latent curve bounds. Clipping would change the noise distribution and can hide behavior near an assay boundary; finite out-of-range values remain available for downstream QC.
+
 The initial default noise standard deviations are:
 
 - Obvious cases: `0.03`
@@ -165,6 +169,8 @@ Every case has one unsigned 32-bit root seed. The generator derives stable named
 - Optional missingness added in later benchmark versions
 
 The balanced MVP profile has a separate, explicit layout seed shared across ordinary cases. This keeps the plate map fixed while case root seeds vary the signal noise and failure injection. A layout-confounding case uses an explicitly different layout configuration rather than acquiring a new map accidentally from its noise seed.
+
+Noise is assigned after canonical sorting by plate and well, so reordering input rows does not change which random draw belongs to a well.
 
 Adding a new random operation must not silently change existing streams. Named child seeds are recorded in private ground truth. With the same benchmark version, configuration, root seed, and layout seed, canonical serialized case files must be byte-reproducible.
 
@@ -202,7 +208,7 @@ Required columns:
 - `dose_unit`
 - `replicate`
 
-Allowed benchmark well roles are `negative_control`, `positive_control`, `treatment`, and `blank`. Control and blank rows may have null dose and replicate fields when those concepts do not apply.
+Allowed benchmark well roles are `negative_control`, `positive_control`, `treatment`, and `empty`. Control and empty rows may have null dose and replicate fields when those concepts do not apply. An assay blank is not currently represented as a separate well role.
 
 Dispensing order is deliberately absent from the required schema. If trustworthy liquid-handler or acquisition logs become available in a future case, they may be included as optional metadata with explicit provenance. Their absence must not invalidate an investigation.
 
@@ -369,7 +375,7 @@ Before serialization, generation must reject:
 - Unsupported well roles, failure modes, or variants
 - Negative noise values
 - Non-positive, duplicated, or unordered doses
-- A generator configuration whose assigned controls, treatments, and blanks do not match its declared plate capacity
+- A generator configuration whose assigned controls, treatments, and empty wells do not match its declared plate capacity
 - Absolute artifact paths or paths escaping the case directory
 - Missing or malformed SHA-256 hashes in a finalized manifest
 
@@ -384,7 +390,7 @@ These requirements apply throughout implementation:
 - Control summaries group the roles actually present and report absent controls explicitly.
 - Dose-response fitting operates per eligible treatment and reports why a curve cannot be fit.
 - Replicate calculations use observed group sizes and retain unequal or singleton groups.
-- Missing wells remain missing; they are not silently converted to blank wells or zero signal.
+- Missing wells remain missing; they are not silently converted to empty wells or zero signal.
 - Reference-dependent evidence is optional and cannot be required for a terminal decision.
 - Spatial tools support both 8×12 and 16×24 geometries.
 - Agent prompts receive a case-specific capability summary rather than a description of the MVP layout.
