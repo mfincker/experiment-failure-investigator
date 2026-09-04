@@ -23,10 +23,10 @@ Completed:
 - Versioned synthetic benchmark specification
 - Typed generator and evaluation-manifest contracts
 - Reproducible case-manifest JSON Schema
+- Geometry-aware balanced plate-layout generation and independent audits
 
 Next:
 
-- Implement and audit the balanced 96-well plate layout
 - Implement the clean assay generator
 - Generate the first reproducible assay case
 - Add deterministic QC tools before introducing model-driven decisions
@@ -129,6 +129,8 @@ The application—not the language model—will enforce tool allowlists, iterati
 4. Add a bounded skeptic loop and human-review checkpoint.
 5. Port orchestration to LangGraph without changing scientific tools or output contracts.
 6. Evaluate both workflows on labeled synthetic cases and document successes and failures.
+
+Deferred benchmark extensions and their implementation triggers are tracked in [the project backlog](docs/backlog.md).
 
 ## Design principles
 

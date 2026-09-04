@@ -128,6 +128,13 @@
         "failure_mode": {
           "$ref": "#/$defs/FailureMode"
         },
+        "layout_seed": {
+          "default": 20260904,
+          "maximum": 4294967295,
+          "minimum": 0,
+          "title": "Layout Seed",
+          "type": "integer"
+        },
         "negative_control_count": {
           "default": 8,
           "minimum": 1,

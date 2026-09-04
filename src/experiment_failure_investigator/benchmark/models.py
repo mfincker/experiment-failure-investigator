@@ -163,6 +163,7 @@ class GeneratorConfig(StrictModel):
     case_variant: CaseVariant
     failure_mode: FailureMode
     root_seed: int = Field(ge=0, le=MAX_SEED)
+    layout_seed: int = Field(default=20_260_904, ge=0, le=MAX_SEED)
     assay_type: AssayType = AssayType.CELL_VIABILITY_ENDPOINT
     signal_direction: SignalDirection = SignalDirection.LOWER_IS_STRONGER
     plate_format: PlateFormat = PlateFormat.WELLS_96

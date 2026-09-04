@@ -81,7 +81,45 @@ The clean layout must distribute controls and treatment-dose replicates across r
 - File row order carries no experimental meaning.
 - Dispensing order is not required and must not be inferred from file order.
 
-Step 3 will define and audit the exact deterministic well assignment. The layout-confounding injector may replace the balanced layout with a deliberately confounded layout.
+Step 3 defines and audits the exact deterministic well assignment below. The layout-confounding injector may replace the balanced layout with a deliberately confounded layout.
+
+### Frozen baseline layout
+
+The initial balanced layout uses layout seed `20260904`. `NC` and `PC` denote negative and positive controls. `T1` is the reference treatment, `T2` is the test treatment, and `D1` through `D8` follow the ascending dose series defined above.
+
+| Row | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| A | T1D7 | NC | PC | T1D6 | T2D3 | T2D1 | T1D3 | T2D2 | T2D7 | T2D5 | T2D8 | T1D4 |
+| B | T1D2 | PC | T1D5 | T1D7 | T2D2 | T1D1 | NC | T1D8 | T2D6 | T1D3 | T2D7 | T2D4 |
+| C | T2D3 | T1D7 | T1D2 | NC | PC | T2D4 | T2D1 | T1D4 | T2D7 | T1D5 | T1D1 | T2D6 |
+| D | T1D8 | T1D1 | NC | T1D2 | T1D5 | T2D5 | PC | T2D3 | T2D8 | T2D6 | T1D6 | T2D1 |
+| E | T2D8 | T2D7 | T2D5 | T1D4 | T2D6 | T1D3 | T1D5 | PC | T2D2 | T2D3 | NC | T1D7 |
+| F | T1D6 | T1D3 | T2D3 | T2D8 | T1D7 | T2D4 | PC | T1D8 | T2D5 | NC | T1D1 | T1D5 |
+| G | T1D1 | T1D6 | T1D2 | PC | T2D8 | NC | T2D1 | T2D5 | T1D8 | T1D4 | T2D4 | T2D2 |
+| H | T1D8 | T1D2 | T2D7 | T2D2 | T1D6 | T2D1 | T1D3 | T2D6 | PC | T2D4 | T1D4 | NC |
+
+The independent audit confirms:
+
+- 96 unique wells with complete `A01`–`H12` coverage
+- 8 negative controls, 8 positive controls, and 80 treatment wells
+- Both control types represented in every row
+- Every treatment-dose replicate set represented in five distinct rows, at least three columns, and both edge and interior regions
+- No condition confined to one row, one column, or one plate region
+
+### Current fixed-layout limitation
+
+The initial twelve-case benchmark slice is intentionally a fixed-layout development fixture. All cases other than the two `layout_confounding` cases reuse the frozen baseline map above; their case root seeds vary signal noise and failure injection, not well assignment. The `layout_confounding` cases are deliberate exceptions because their planted mechanism requires a different, confounded map.
+
+Results on this slice measure performance within the baseline layout. They do **not** demonstrate that an investigator generalizes to unseen well assignments, alternative control allocations, different replicate counts, missing reference treatments, or 384-well plates. Repeated well positions may become an unintended shortcut for prompts, tools, or models even when the layout is not described explicitly.
+
+Any evaluation report based on this slice must:
+
+- Label the results as fixed-layout or in-layout results.
+- Report the number of distinct layout fingerprints represented.
+- Avoid claims of layout robustness or generalization.
+- Keep layout-confounding performance separate from unseen-layout generalization; detecting a deliberately confounded map is a different capability.
+
+Before making a layout-generalization claim, expand the benchmark with multiple balanced layout seeds and evaluate on held-out layouts that were not used for prompt, tool, or threshold development. Report fixed-layout development results separately from held-out-layout results, stratify by plate format and layout family, and verify automatically that development and held-out layout fingerprints do not overlap.
 
 ## Clean signal model
 
@@ -122,12 +160,13 @@ These values are benchmark parameters. They are not assay acceptance criteria. T
 
 Every case has one unsigned 32-bit root seed. The generator derives stable named child seeds for:
 
-- Layout assignment
 - Baseline well noise
 - Failure injection
 - Optional missingness added in later benchmark versions
 
-Adding a new random operation must not silently change existing streams. Named child seeds are recorded in private ground truth. With the same benchmark version, configuration, and root seed, canonical serialized case files must be byte-reproducible.
+The balanced MVP profile has a separate, explicit layout seed shared across ordinary cases. This keeps the plate map fixed while case root seeds vary the signal noise and failure injection. A layout-confounding case uses an explicitly different layout configuration rather than acquiring a new map accidentally from its noise seed.
+
+Adding a new random operation must not silently change existing streams. Named child seeds are recorded in private ground truth. With the same benchmark version, configuration, root seed, and layout seed, canonical serialized case files must be byte-reproducible.
 
 ## Investigator-visible inputs
 
@@ -349,7 +388,9 @@ These requirements apply throughout implementation:
 - Reference-dependent evidence is optional and cannot be required for a terminal decision.
 - Spatial tools support both 8×12 and 16×24 geometries.
 - Agent prompts receive a case-specific capability summary rather than a description of the MVP layout.
-- Evaluation must eventually include format-shift cases so successful performance on the balanced profile is not mistaken for generality.
+- Evaluation must include multiple balanced layouts and format-shift cases before successful performance on the frozen baseline profile is described as generality.
+- Evaluation artifacts must identify their layout split, unique layout count, and plate formats; fixed-layout results must be labeled explicitly.
+- Held-out layout fingerprints must not overlap layouts used to develop prompts, tools, thresholds, or deterministic diagnostics.
 
 ## Review gate
 

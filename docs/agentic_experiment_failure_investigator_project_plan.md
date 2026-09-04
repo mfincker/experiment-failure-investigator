@@ -316,6 +316,16 @@ Create at least 30 labeled cases:
 
 Keep the random seed, planted mechanism, and expected discriminating evidence for every case.
 
+The initial Week 1 slice deliberately reuses one balanced baseline layout for all non-layout-confounding cases. Treat its results as fixed-layout development evidence, not evidence of layout generalization. The layout-confounding cases use deliberately altered maps and test recognition of confounding; they do not substitute for evaluation on unseen balanced layouts.
+
+Before reporting generalization, partition the expanded benchmark by canonical layout fingerprint:
+
+- Use multiple balanced layouts during development.
+- Reserve unseen balanced layouts for the final test split and do not tune prompts, tools, thresholds, or deterministic diagnostics on them.
+- Include changes in control allocation, replicate count, optional reference treatment, and plate format where scientifically applicable.
+- Verify that development and held-out layout fingerprints do not overlap.
+- Report metrics separately for fixed-layout development cases, held-out layouts, layout-confounding cases, and 96-to-384-well format shifts.
+
 ### Scientific metrics
 
 - Correct root cause ranked first
@@ -487,6 +497,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 **Tasks**
 
 - Expand the benchmark to at least 30 cases.
+- Add multiple balanced layout families and a fingerprint-disjoint held-out layout split before evaluating layout generalization.
 - Estimate and cap the local evaluation request count and runtime before execution; estimate monetary cost only for an explicitly enabled remote comparison.
 - Run all planned ablations as a controlled milestone batch.
 - Analyze accuracy, failure modes, request count, token usage, runtime, latency, and monetary cost when applicable.
@@ -500,7 +511,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 
 **Exit criterion**
 
-- A reviewer can reproduce the benchmark, inspect a trace, understand the agent boundaries, and see quantitative evidence about whether the skeptic and graph orchestration helped.
+- A reviewer can reproduce the benchmark, inspect a trace, understand the agent boundaries, distinguish fixed-layout from held-out-layout evidence, and see quantitative evidence about whether the skeptic and graph orchestration helped.
 
 ## Suggested repository structure
 

@@ -150,6 +150,8 @@ Checkpoint: the scientific assumptions and file contracts can be reviewed withou
 
 ### 3. Implement well identities and the fixed plate layout
 
+Scope note: this step creates a reproducible development fixture, not a representative sample of plate layouts. The initial non-layout-confounding cases reuse this map. Layout-generalization testing is deferred to an expanded benchmark and results from the Week 1 slice must be labeled fixed-layout.
+
 Actions:
 
 - Implement canonical conversion among row, column, and well ID.
@@ -286,9 +288,10 @@ Actions:
 
 - Implement general-purpose `generate-cases` and `validate-cases` CLI commands; Week 1 uses the initial twelve-case configuration registry.
 - Generate all cases from a version-controlled registry of typed configurations.
+- Record a canonical layout fingerprint for every case and confirm that the ten non-layout-confounding cases share the baseline fingerprint while the two layout-confounding cases differ by design.
 - Produce a compact index containing case ID, seed, failure mode, variant, paths, and validation status.
 - Inspect all plots in a grid or contact sheet, but retain the individual source plots.
-- Record review notes, including cases that are too obvious, too subtle, or accidentally ambiguous.
+- Record review notes, including cases that are too obvious, too subtle, accidentally ambiguous, or susceptible to fixed-position shortcuts.
 
 Verification:
 
@@ -300,7 +303,7 @@ git diff --stat
 git diff -- docs/benchmark_spec.md
 ```
 
-Checkpoint: all twelve cases validate and the human reviewer agrees that each planted mechanism is visible in the raw inputs and baseline plots at the intended difficulty.
+Checkpoint: all twelve cases validate, their expected layout fingerprints are recorded, and the human reviewer agrees that each planted mechanism is visible in the raw inputs and baseline plots at the intended difficulty. This checkpoint establishes fixed-layout development behavior only.
 
 ### 9. Freeze the Week 1 benchmark slice
 
