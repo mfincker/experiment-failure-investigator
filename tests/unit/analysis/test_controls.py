@@ -42,14 +42,14 @@ def _control_case(
     selected_positive = plate_map[plate_map["well_role"] == "positive_control"].head(
         len(positive)
     )
-    selected_map = np.concatenate(
+    selected_indices = np.concatenate(
         [
             selected_negative.index.to_numpy(),
             selected_positive.index.to_numpy(),
             plate_map.index[plate_map["well_role"] == "treatment"].to_numpy(),
         ]
     )
-    reduced_map = plate_map.loc[selected_map].copy()
+    reduced_map = plate_map.loc[selected_indices].copy()
     retained_wells = set(reduced_map["well"])
     measurements = loaded.measurements[
         loaded.measurements["well"].isin(retained_wells)
