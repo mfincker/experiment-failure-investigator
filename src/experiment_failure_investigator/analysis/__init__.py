@@ -13,17 +13,43 @@ from experiment_failure_investigator.analysis.contracts import (
     TreatmentDoseSeries,
 )
 from experiment_failure_investigator.analysis.design import build_investigator_case
+from experiment_failure_investigator.analysis.results import (
+    EvidenceId,
+    EvidenceRecord,
+    EvidenceScope,
+    ResultWarning,
+    RuntimeTelemetry,
+    ScientificProvenance,
+    ScientificToolResult,
+    ToolExecution,
+    ToolStatus,
+    build_evidence_id,
+    build_evidence_record,
+    canonical_json,
+)
 
 __all__ = [
     "ConditionCoverage",
     "DesignCapabilities",
     "DesignSummary",
+    "EvidenceId",
+    "EvidenceRecord",
+    "EvidenceScope",
     "InvestigatorCase",
     "InvestigatorMeasurement",
     "InvestigatorMetadata",
     "InvestigatorPlateMapWell",
     "PlateDesignSummary",
     "PublicArtifactHashes",
+    "ResultWarning",
+    "RuntimeTelemetry",
+    "ScientificProvenance",
+    "ScientificToolResult",
     "TreatmentDoseSeries",
+    "ToolExecution",
+    "ToolStatus",
+    "build_evidence_id",
+    "build_evidence_record",
     "build_investigator_case",
+    "canonical_json",
 ]
