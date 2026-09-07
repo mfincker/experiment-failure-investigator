@@ -1,0 +1,127 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "benchmark_version": "1.0.0",
+  "case_id": "transient_tip_clog_obvious",
+  "case_variant": "obvious",
+  "expected_discriminating_evidence": [
+    "A localized sequence of wells is consistent with grouped dispensing."
+  ],
+  "files": {
+    "measurements": {
+      "path": "measurements.csv",
+      "sha256": "3a32306015248945b449d836ffc402927bb3a443576ff5f5da106a18b70c5cca"
+    },
+    "metadata": {
+      "path": "metadata.json",
+      "sha256": "df045ac2c3b1adeb50053f282ae4868e622a1ec1d06efa46208ffd45bd771473"
+    },
+    "plate_map": {
+      "path": "plate_map.csv",
+      "sha256": "5828bea9c1e9155d033702eb2c23a5f9378bfc0e58821d95786dce92e7f9f5a4"
+    },
+    "plots": {
+      "comparison_grid": {
+        "path": "plots/comparison_grid.png",
+        "sha256": "dc2dd3c8c32a79c7dce79859431fabe29816baec681f56ab7bae58b292cd43f0"
+      },
+      "control_qc": {
+        "path": "plots/control_qc.png",
+        "sha256": "9bc105a66c652518a51af46cb9d2c29ada42457e8cce18e07bfc05c3022c3649"
+      },
+      "dose_response": {
+        "path": "plots/dose_response.png",
+        "sha256": "3c8499ff183fb3f8066427189f2c16584b9de33c1ad64b72e1ee32900ec9ae0e"
+      },
+      "plate_heatmap": {
+        "path": "plots/plate_heatmap.png",
+        "sha256": "5d5f6fb76fb27050ee439bf7edfd8e9abe442e753d27d0fb6f5b3a0765745dd0"
+      },
+      "residual_heatmap": {
+        "path": "plots/residual_heatmap.png",
+        "sha256": "03b2e73b8b920deafc3ffb73e53588cfb06634cb981d58b6f84371e68a714848"
+      }
+    },
+    "problem_statement": {
+      "path": "problem_statement.txt",
+      "sha256": "36e6c84fa00002703702831935b61ed0fd263ef869bf3598f3cfb82820adec9d"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "34144d6a1b3c78d9c264de46d67e8237f04f7de1b7d7a976c1eb70e7ddd5cf4c"
+    }
+  },
+  "generation": {
+    "assay_type": "cell_viability_endpoint",
+    "benchmark_version": "1.0.0",
+    "case_id": "transient_tip_clog_obvious",
+    "case_variant": "obvious",
+    "curves": {
+      "reference_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 0.3,
+        "top": 1.0
+      },
+      "test_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 1.0,
+        "top": 1.0
+      }
+    },
+    "doses_micromolar": [
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0
+    ],
+    "empty_count": 0,
+    "failure_mode": "transient_tip_clog",
+    "layout_seed": 20260904,
+    "negative_control_count": 8,
+    "negative_control_mean": 1.0,
+    "noise_sd": 0.03,
+    "plate_count": 1,
+    "plate_format": "96_well",
+    "positive_control_count": 8,
+    "positive_control_mean": 0.15,
+    "replicates_per_condition": 5,
+    "root_seed": 1005,
+    "schema_version": "1.0.0",
+    "signal_direction": "lower_is_stronger",
+    "treatments": [
+      "reference_treatment",
+      "test_treatment"
+    ]
+  },
+  "ground_truth": {
+    "child_seeds": {
+      "baseline_noise": 3526941539,
+      "failure_injection": 562122543
+    },
+    "injection_parameters": {
+      "affected_channels": [
+        2
+      ],
+      "affected_group_count": 4,
+      "affected_group_start": 3,
+      "direction": "decrease",
+      "dispense_group_size": 8,
+      "magnitude": 0.25,
+      "traversal": "column_major"
+    },
+    "mechanism": "transient_tip_clog",
+    "simulated_traversal": "column_major"
+  },
+  "planted_failure_mode": "transient_tip_clog",
+  "plausible_confounders": [
+    "Localized contamination, readout artifact, or annotation error."
+  ],
+  "root_seed": 1005,
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

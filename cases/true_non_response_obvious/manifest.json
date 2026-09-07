@@ -1,0 +1,120 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "benchmark_version": "1.0.0",
+  "case_id": "true_non_response_obvious",
+  "case_variant": "obvious",
+  "expected_discriminating_evidence": [
+    "The test treatment is flat while controls and the reference remain responsive."
+  ],
+  "files": {
+    "measurements": {
+      "path": "measurements.csv",
+      "sha256": "3a6483313e51fddf5eaa949485825ab1e14a8b53fb5acf56fbdd7d70bfa9a006"
+    },
+    "metadata": {
+      "path": "metadata.json",
+      "sha256": "7af7d967145ef0adb97f0a36b4df3581f91d3fbf62da109596a9216ff9ec9a91"
+    },
+    "plate_map": {
+      "path": "plate_map.csv",
+      "sha256": "5828bea9c1e9155d033702eb2c23a5f9378bfc0e58821d95786dce92e7f9f5a4"
+    },
+    "plots": {
+      "comparison_grid": {
+        "path": "plots/comparison_grid.png",
+        "sha256": "065a04a43142ede6135a3b2647e222a94f9ebf83f35a2d07215f53cac484fe82"
+      },
+      "control_qc": {
+        "path": "plots/control_qc.png",
+        "sha256": "c0834cd9ae62e1a23e79240311944eaf36bcda652e3430b1ea3b6a2354d20e44"
+      },
+      "dose_response": {
+        "path": "plots/dose_response.png",
+        "sha256": "f89c24bb84a2c8dcaea6e0131c814555b8d45effbf08eda8b1d7c7b1823d16a0"
+      },
+      "plate_heatmap": {
+        "path": "plots/plate_heatmap.png",
+        "sha256": "ef8fec22c47f6f681b9e97b74e37620f7a064bc99dd035a3a0e9b15c13f1903e"
+      },
+      "residual_heatmap": {
+        "path": "plots/residual_heatmap.png",
+        "sha256": "f27587c3ee520e9cef63de6491b82c6e85dad2f46d509992f32bdc9198a37f3e"
+      }
+    },
+    "problem_statement": {
+      "path": "problem_statement.txt",
+      "sha256": "380dcfed54e1af929be51b7b538943e6c9bf85b2a31ad3b2d6c49425bc60a826"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "34144d6a1b3c78d9c264de46d67e8237f04f7de1b7d7a976c1eb70e7ddd5cf4c"
+    }
+  },
+  "generation": {
+    "assay_type": "cell_viability_endpoint",
+    "benchmark_version": "1.0.0",
+    "case_id": "true_non_response_obvious",
+    "case_variant": "obvious",
+    "curves": {
+      "reference_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 0.3,
+        "top": 1.0
+      },
+      "test_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 1.0,
+        "top": 1.0
+      }
+    },
+    "doses_micromolar": [
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0
+    ],
+    "empty_count": 0,
+    "failure_mode": "true_non_response",
+    "layout_seed": 20260904,
+    "negative_control_count": 8,
+    "negative_control_mean": 1.0,
+    "noise_sd": 0.03,
+    "plate_count": 1,
+    "plate_format": "96_well",
+    "positive_control_count": 8,
+    "positive_control_mean": 0.15,
+    "replicates_per_condition": 5,
+    "root_seed": 1013,
+    "schema_version": "1.0.0",
+    "signal_direction": "lower_is_stronger",
+    "treatments": [
+      "reference_treatment",
+      "test_treatment"
+    ]
+  },
+  "ground_truth": {
+    "child_seeds": {
+      "baseline_noise": 789526052,
+      "failure_injection": 3944395451
+    },
+    "injection_parameters": {
+      "flat_expected_signal": 1.0,
+      "target_treatment": "test_treatment"
+    },
+    "mechanism": "true_non_response",
+    "simulated_traversal": null
+  },
+  "planted_failure_mode": "true_non_response",
+  "plausible_confounders": [
+    "Test-treatment preparation or dose-annotation error."
+  ],
+  "root_seed": 1013,
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

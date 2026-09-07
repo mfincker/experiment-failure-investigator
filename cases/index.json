@@ -1,0 +1,147 @@
+{
+  "benchmark_version": "1.0.0",
+  "case_count": 14,
+  "cases": [
+    {
+      "case_id": "edge_effect_obvious",
+      "failure_mode": "edge_effect",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "edge_effect_obvious/manifest.json",
+      "path": "edge_effect_obvious",
+      "root_seed": 1001,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "edge_effect_noisy",
+      "failure_mode": "edge_effect",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "edge_effect_noisy/manifest.json",
+      "path": "edge_effect_noisy",
+      "root_seed": 1002,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "pipetting_drift_obvious",
+      "failure_mode": "pipetting_drift",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "pipetting_drift_obvious/manifest.json",
+      "path": "pipetting_drift_obvious",
+      "root_seed": 1003,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "pipetting_drift_noisy",
+      "failure_mode": "pipetting_drift",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "pipetting_drift_noisy/manifest.json",
+      "path": "pipetting_drift_noisy",
+      "root_seed": 1004,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "transient_tip_clog_obvious",
+      "failure_mode": "transient_tip_clog",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "transient_tip_clog_obvious/manifest.json",
+      "path": "transient_tip_clog_obvious",
+      "root_seed": 1005,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "transient_tip_clog_noisy",
+      "failure_mode": "transient_tip_clog",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "transient_tip_clog_noisy/manifest.json",
+      "path": "transient_tip_clog_noisy",
+      "root_seed": 1006,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "layout_confounding_obvious",
+      "failure_mode": "layout_confounding",
+      "layout_fingerprint": "76f2d1a147daa21c3ae163400c21b01ef7de654389924bdb0f723238e9c96193",
+      "manifest": "layout_confounding_obvious/manifest.json",
+      "path": "layout_confounding_obvious",
+      "root_seed": 1007,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "layout_confounding_noisy",
+      "failure_mode": "layout_confounding",
+      "layout_fingerprint": "76f2d1a147daa21c3ae163400c21b01ef7de654389924bdb0f723238e9c96193",
+      "manifest": "layout_confounding_noisy/manifest.json",
+      "path": "layout_confounding_noisy",
+      "root_seed": 1008,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "weak_controls_obvious",
+      "failure_mode": "weak_controls",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "weak_controls_obvious/manifest.json",
+      "path": "weak_controls_obvious",
+      "root_seed": 1009,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "weak_controls_noisy",
+      "failure_mode": "weak_controls",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "weak_controls_noisy/manifest.json",
+      "path": "weak_controls_noisy",
+      "root_seed": 1010,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "batch_shift_obvious",
+      "failure_mode": "batch_shift",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "batch_shift_obvious/manifest.json",
+      "path": "batch_shift_obvious",
+      "root_seed": 1011,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "batch_shift_noisy",
+      "failure_mode": "batch_shift",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "batch_shift_noisy/manifest.json",
+      "path": "batch_shift_noisy",
+      "root_seed": 1012,
+      "validated": true,
+      "variant": "noisy"
+    },
+    {
+      "case_id": "true_non_response_obvious",
+      "failure_mode": "true_non_response",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "true_non_response_obvious/manifest.json",
+      "path": "true_non_response_obvious",
+      "root_seed": 1013,
+      "validated": true,
+      "variant": "obvious"
+    },
+    {
+      "case_id": "true_non_response_noisy",
+      "failure_mode": "true_non_response",
+      "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+      "manifest": "true_non_response_noisy/manifest.json",
+      "path": "true_non_response_noisy",
+      "root_seed": 1014,
+      "validated": true,
+      "variant": "noisy"
+    }
+  ],
+  "schema_version": "1.0.0"
+}

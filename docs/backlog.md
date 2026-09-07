@@ -4,14 +4,6 @@ This backlog records work that is intentionally outside the current implementati
 
 ## Layout generalization
 
-### Add layout fingerprints during case serialization
-
-**When:** Step 6, when canonical case serialization and hashes are implemented.
-
-Create a stable SHA-256 fingerprint from the plate format and the semantic assignment of well role, treatment, and dose to canonically sorted plate/well coordinates. Exclude measurements, random seeds, case identifiers, and interchangeable replicate labels. Store the fingerprint in generated benchmark metadata so equivalent layouts can be recognized regardless of CSV row order.
-
-**Done when:** regenerated equivalent layouts have the same fingerprint, meaningfully different well assignments have different fingerprints, and tests cover both behaviors.
-
 ### Generate multiple balanced layouts
 
 **When:** the benchmark expands beyond the initial fixed-layout development slice.

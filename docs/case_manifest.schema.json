@@ -42,6 +42,13 @@
         "plate_map": {
           "$ref": "#/$defs/ArtifactReference"
         },
+        "plots": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ArtifactReference"
+          },
+          "title": "Plots",
+          "type": "object"
+        },
         "problem_statement": {
           "$ref": "#/$defs/ArtifactReference"
         },

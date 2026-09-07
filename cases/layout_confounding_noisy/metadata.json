@@ -1,0 +1,16 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "case_id": "layout_confounding_noisy",
+  "layout_fingerprint": "76f2d1a147daa21c3ae163400c21b01ef7de654389924bdb0f723238e9c96193",
+  "plates": [
+    {
+      "batch_id": "batch_01",
+      "instrument_label": "synthetic_reader_01",
+      "operator_label": "synthetic_operator_01",
+      "plate_id": "plate_01",
+      "run_date": "2026-09-01"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

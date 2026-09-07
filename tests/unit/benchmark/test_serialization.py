@@ -23,6 +23,7 @@ from experiment_failure_investigator.benchmark.serialization import (
     MANIFEST_FILENAME,
     CasePayload,
     build_case_metadata,
+    layout_fingerprint,
     load_case,
     sha256_file,
     validate_case_content,
@@ -47,7 +48,7 @@ def payload() -> CasePayload:
     )
     metadata = build_case_metadata(
         config,
-        injected.plate_map["plate_id"].unique().tolist(),
+        injected.plate_map,
     )
     return CasePayload(
         config=config,
@@ -79,7 +80,12 @@ def test_case_round_trips_with_typed_manifest_and_verified_hashes(
     assert "expected_signal" not in loaded.measurements
     assert "injected_effect" not in loaded.measurements
 
-    references = loaded.manifest.files.model_dump().values()
+    serialized_files = loaded.manifest.files.model_dump()
+    references = [
+        reference
+        for name, reference in serialized_files.items()
+        if name != "plots"
+    ]
     for reference in references:
         assert sha256_file(case_directory / reference["path"]) == reference["sha256"]
     assert MANIFEST_FILENAME not in {
@@ -97,6 +103,55 @@ def test_serialization_is_byte_reproducible(
     first_files = {path.name: path.read_bytes() for path in first.iterdir()}
     second_files = {path.name: path.read_bytes() for path in second.iterdir()}
     assert first_files == second_files
+
+
+def test_layout_fingerprint_ignores_order_ids_and_replicate_labels(
+    payload: CasePayload,
+) -> None:
+    original = payload.assay.plate_map
+    equivalent = original.sample(frac=1, random_state=7).copy()
+    equivalent["plate_id"] = "renamed_plate"
+    equivalent["sample_id"] = "changed"
+    equivalent["replicate"] = 99
+
+    assert layout_fingerprint(original, payload.config) == layout_fingerprint(
+        equivalent,
+        payload.config,
+    )
+
+
+def test_layout_fingerprint_changes_with_semantic_assignment(
+    payload: CasePayload,
+) -> None:
+    original = payload.assay.plate_map
+    changed = original.copy(deep=True)
+    first, second = changed.index[:2]
+    semantic_columns = ["well_role", "treatment", "dose"]
+    changed.loc[[first, second], semantic_columns] = changed.loc[
+        [second, first], semantic_columns
+    ].to_numpy()
+
+    assert layout_fingerprint(original, payload.config) != layout_fingerprint(
+        changed,
+        payload.config,
+    )
+
+
+def test_plot_artifacts_are_hashed_and_validated(
+    tmp_path: Path,
+    payload: CasePayload,
+) -> None:
+    def write_plot(plot_directory: Path) -> dict[str, Path]:
+        output = plot_directory / "inspection.png"
+        output.write_bytes(b"synthetic-png")
+        return {"inspection": output}
+
+    case_directory = write_case(payload, tmp_path, plot_writer=write_plot)
+    loaded = load_case(case_directory)
+
+    plot = loaded.manifest.files.plots["inspection"]
+    assert plot.path == "plots/inspection.png"
+    assert sha256_file(case_directory / plot.path) == plot.sha256
 
 
 def test_existing_case_requires_force_and_force_replaces_atomically(

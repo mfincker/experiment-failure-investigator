@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from uuid import uuid4
 
 import numpy as np
 import pandas as pd
+from pydantic import JsonValue
 
 from experiment_failure_investigator.benchmark.injectors import InjectedAssayResult
 from experiment_failure_investigator.benchmark.layouts import (
@@ -42,6 +44,7 @@ PUBLIC_FILENAMES = {
     "protocol": "protocol.md",
     "problem_statement": "problem_statement.txt",
 }
+PlotWriter = Callable[[Path], Mapping[str, Path]]
 
 
 @dataclass(frozen=True)
@@ -72,18 +75,65 @@ class LoadedCase:
 
 def build_case_metadata(
     config: GeneratorConfig,
-    plate_ids: list[str],
+    plate_map: pd.DataFrame,
 ) -> CaseMetadata:
     """Build minimal public metadata without inventing optional provenance."""
+    plate_ids = sorted(str(value) for value in plate_map["plate_id"].unique())
     return CaseMetadata(
         case_id=config.case_id,
         assay_type=config.assay_type,
         signal_direction=config.signal_direction,
+        layout_fingerprint=layout_fingerprint(plate_map, config),
         plates=[
             PlateMetadata(plate_id=plate_id, batch_id=plate_id)
             for plate_id in sorted(plate_ids)
         ],
     )
+
+
+def layout_fingerprint(
+    plate_map: pd.DataFrame,
+    config: GeneratorConfig,
+) -> str:
+    """Fingerprint semantic well assignments independently of IDs and row order."""
+    required = {"plate_id", "well", "well_role", "treatment", "dose"}
+    missing = sorted(required - set(plate_map.columns))
+    if missing:
+        raise ValueError(
+            "layout fingerprint is missing required columns: " + ", ".join(missing)
+        )
+    fingerprints: list[str] = []
+    for _, plate in plate_map.groupby("plate_id", sort=False):
+        records: list[dict[str, JsonValue]] = []
+        for row in plate.sort_values("well", kind="stable").itertuples(index=False):
+            dose = getattr(row, "dose")
+            records.append(
+                {
+                    "well": str(getattr(row, "well")),
+                    "well_role": str(getattr(row, "well_role")),
+                    "treatment": (
+                        None
+                        if pd.isna(getattr(row, "treatment"))
+                        else str(getattr(row, "treatment"))
+                    ),
+                    "dose": None if pd.isna(dose) else float(dose),
+                }
+            )
+        payload = {
+            "plate_format": config.plate_format.value,
+            "assignments": records,
+        }
+        fingerprints.append(
+            hashlib.sha256(_json_text(payload).encode("utf-8")).hexdigest()
+        )
+    unique_fingerprints = sorted(set(fingerprints))
+    if not unique_fingerprints:
+        raise ValueError("layout fingerprint requires at least one plate")
+    if len(unique_fingerprints) == 1:
+        return unique_fingerprints[0]
+    return hashlib.sha256(
+        _json_text(unique_fingerprints).encode("utf-8")
+    ).hexdigest()
 
 
 def sha256_file(path: Path) -> str:
@@ -190,6 +240,8 @@ def validate_case_content(
         or metadata.signal_direction != config.signal_direction
     ):
         raise ValueError("metadata disagrees with the generator configuration")
+    if metadata.layout_fingerprint != layout_fingerprint(plate_map, config):
+        raise ValueError("metadata layout fingerprint does not match the plate map")
 
     expected_geometry = enumerate_wells(config.plate_format).set_index("well")
     expected_wells = set(expected_geometry.index)
@@ -309,7 +361,11 @@ def _artifact_reference(directory: Path, filename: str) -> ArtifactReference:
     return ArtifactReference(path=filename, sha256=sha256_file(directory / filename))
 
 
-def _write_staged_case(payload: CasePayload, directory: Path) -> CaseManifest:
+def _write_staged_case(
+    payload: CasePayload,
+    directory: Path,
+    plot_writer: PlotWriter | None,
+) -> CaseManifest:
     measurements_path = directory / PUBLIC_FILENAMES["measurements"]
     plate_map_path = directory / PUBLIC_FILENAMES["plate_map"]
     metadata_path = directory / PUBLIC_FILENAMES["metadata"]
@@ -342,11 +398,37 @@ def _write_staged_case(payload: CasePayload, directory: Path) -> CaseManifest:
         newline="",
     )
 
+    plot_references: dict[str, ArtifactReference] = {}
+    if plot_writer is not None:
+        plot_directory = directory / "plots"
+        plot_directory.mkdir()
+        written_plots = dict(plot_writer(plot_directory))
+        if not written_plots:
+            raise ValueError("plot writer must return at least one plot")
+        for name, path in written_plots.items():
+            if not name.strip():
+                raise ValueError("plot names must not be blank")
+            resolved_path = path.resolve()
+            if not resolved_path.is_relative_to(directory.resolve()):
+                raise ValueError("plot writer returned a path outside the case directory")
+            if not path.is_file():
+                raise ValueError(f"plot writer did not create {name!r}")
+            relative_path = path.relative_to(directory).as_posix()
+            plot_references[name] = _artifact_reference(directory, relative_path)
+
     files = CaseFiles(
-        **{
-            name: _artifact_reference(directory, filename)
-            for name, filename in PUBLIC_FILENAMES.items()
-        }
+        measurements=_artifact_reference(
+            directory,
+            PUBLIC_FILENAMES["measurements"],
+        ),
+        plate_map=_artifact_reference(directory, PUBLIC_FILENAMES["plate_map"]),
+        metadata=_artifact_reference(directory, PUBLIC_FILENAMES["metadata"]),
+        protocol=_artifact_reference(directory, PUBLIC_FILENAMES["protocol"]),
+        problem_statement=_artifact_reference(
+            directory,
+            PUBLIC_FILENAMES["problem_statement"],
+        ),
+        plots=plot_references,
     )
     injection_parameters = payload.assay.injection.parameters
     serialized_traversal = injection_parameters.get("traversal")
@@ -392,6 +474,7 @@ def write_case(
     output_root: Path,
     *,
     force: bool = False,
+    plot_writer: PlotWriter | None = None,
 ) -> Path:
     """Validate and atomically write one case beneath ``output_root``."""
     _validate_payload(payload)
@@ -407,7 +490,7 @@ def write_case(
     )
     backup: Path | None = None
     try:
-        _write_staged_case(payload, staging)
+        _write_staged_case(payload, staging, plot_writer)
         load_case(staging)
         if destination.exists():
             backup = output_root / f".{payload.config.case_id}.backup-{uuid4().hex}"
@@ -448,8 +531,15 @@ def load_case(case_directory: Path) -> LoadedCase:
     manifest = CaseManifest.model_validate_json(
         manifest_path.read_text(encoding="utf-8")
     )
-    artifact_values = list(manifest.files.model_dump().values())
-    artifact_paths = [artifact["path"] for artifact in artifact_values]
+    artifacts = [
+        manifest.files.measurements,
+        manifest.files.plate_map,
+        manifest.files.metadata,
+        manifest.files.protocol,
+        manifest.files.problem_statement,
+        *manifest.files.plots.values(),
+    ]
+    artifact_paths = [artifact.path for artifact in artifacts]
     if len(artifact_paths) != len(set(artifact_paths)):
         raise ValueError("manifest artifact paths must be unique")
 
@@ -458,6 +548,8 @@ def load_case(case_directory: Path) -> LoadedCase:
     metadata_path = _resolve_artifact(case_directory, manifest.files.metadata)
     protocol_path = _resolve_artifact(case_directory, manifest.files.protocol)
     problem_path = _resolve_artifact(case_directory, manifest.files.problem_statement)
+    for plot in manifest.files.plots.values():
+        _resolve_artifact(case_directory, plot)
 
     measurements = pd.read_csv(measurements_path)
     plate_map = pd.read_csv(plate_map_path)

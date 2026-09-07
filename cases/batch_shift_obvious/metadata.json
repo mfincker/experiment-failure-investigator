@@ -1,0 +1,23 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "case_id": "batch_shift_obvious",
+  "layout_fingerprint": "8063a5e5d0fe1c3eef78698f569998728b67949763aa44d89ee90572e28b1c88",
+  "plates": [
+    {
+      "batch_id": "batch_01",
+      "instrument_label": "synthetic_reader_01",
+      "operator_label": "synthetic_operator_01",
+      "plate_id": "plate_01",
+      "run_date": "2026-09-01"
+    },
+    {
+      "batch_id": "batch_02",
+      "instrument_label": "synthetic_reader_01",
+      "operator_label": "synthetic_operator_01",
+      "plate_id": "plate_02",
+      "run_date": "2026-09-02"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

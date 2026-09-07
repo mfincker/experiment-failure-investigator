@@ -1,0 +1,121 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "benchmark_version": "1.0.0",
+  "case_id": "pipetting_drift_obvious",
+  "case_variant": "obvious",
+  "expected_discriminating_evidence": [
+    "Condition-adjusted signal follows a row-wise or column-wise gradient."
+  ],
+  "files": {
+    "measurements": {
+      "path": "measurements.csv",
+      "sha256": "55262e8d4b699ede645e5d2f2368b74ee387c999bdec81629ee792fa56bc5710"
+    },
+    "metadata": {
+      "path": "metadata.json",
+      "sha256": "f20071c733aa223c377993927df64980b9c332ea599a7fd8a4d3689a98870b11"
+    },
+    "plate_map": {
+      "path": "plate_map.csv",
+      "sha256": "5828bea9c1e9155d033702eb2c23a5f9378bfc0e58821d95786dce92e7f9f5a4"
+    },
+    "plots": {
+      "comparison_grid": {
+        "path": "plots/comparison_grid.png",
+        "sha256": "cbd9bb0d774aabe8fd7e3d5cd7076660c3ce4eaa040fd87db3e2ba0334602020"
+      },
+      "control_qc": {
+        "path": "plots/control_qc.png",
+        "sha256": "c357ba8b4c8de5ef5f5d3aeef578e34092e68915015d76279cbb368afa000d50"
+      },
+      "dose_response": {
+        "path": "plots/dose_response.png",
+        "sha256": "cd55cfd2c6ec57f019e26e8b5189f44eceddfd272bfba4d1a8db2e9320da3485"
+      },
+      "plate_heatmap": {
+        "path": "plots/plate_heatmap.png",
+        "sha256": "1365b0aa9ca21f41ccad98c8b3ad1190e7e2f6a6b2b4ba321e9f68eb55c9b0a2"
+      },
+      "residual_heatmap": {
+        "path": "plots/residual_heatmap.png",
+        "sha256": "ef70a409693317d0d5d59a7d24ccb6f70d835e53f50b5e66c5e6346287f517a6"
+      }
+    },
+    "problem_statement": {
+      "path": "problem_statement.txt",
+      "sha256": "c46547b8142ec1e27aaf43d6780d7d79b68a5ab45ae2562d54e90957fc067a6c"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "34144d6a1b3c78d9c264de46d67e8237f04f7de1b7d7a976c1eb70e7ddd5cf4c"
+    }
+  },
+  "generation": {
+    "assay_type": "cell_viability_endpoint",
+    "benchmark_version": "1.0.0",
+    "case_id": "pipetting_drift_obvious",
+    "case_variant": "obvious",
+    "curves": {
+      "reference_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 0.3,
+        "top": 1.0
+      },
+      "test_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 1.0,
+        "top": 1.0
+      }
+    },
+    "doses_micromolar": [
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0
+    ],
+    "empty_count": 0,
+    "failure_mode": "pipetting_drift",
+    "layout_seed": 20260904,
+    "negative_control_count": 8,
+    "negative_control_mean": 1.0,
+    "noise_sd": 0.03,
+    "plate_count": 1,
+    "plate_format": "96_well",
+    "positive_control_count": 8,
+    "positive_control_mean": 0.15,
+    "replicates_per_condition": 5,
+    "root_seed": 1003,
+    "schema_version": "1.0.0",
+    "signal_direction": "lower_is_stronger",
+    "treatments": [
+      "reference_treatment",
+      "test_treatment"
+    ]
+  },
+  "ground_truth": {
+    "child_seeds": {
+      "baseline_noise": 1018589632,
+      "failure_injection": 1165840700
+    },
+    "injection_parameters": {
+      "direction": "increase",
+      "magnitude": 0.3,
+      "traversal": "row_major"
+    },
+    "mechanism": "pipetting_drift",
+    "simulated_traversal": "row_major"
+  },
+  "planted_failure_mode": "pipetting_drift",
+  "plausible_confounders": [
+    "Incubation timing, temperature gradient, or layout confounding."
+  ],
+  "root_seed": 1003,
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

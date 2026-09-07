@@ -1,0 +1,124 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "benchmark_version": "1.0.0",
+  "case_id": "edge_effect_noisy",
+  "case_variant": "noisy",
+  "expected_discriminating_evidence": [
+    "A condition-adjusted difference is concentrated on plate boundaries."
+  ],
+  "files": {
+    "measurements": {
+      "path": "measurements.csv",
+      "sha256": "c9ebebb3a9e4c3cab83e9fcdb8a95b3f8835181d4eb1db250d7ed760983eed02"
+    },
+    "metadata": {
+      "path": "metadata.json",
+      "sha256": "84f1d841a79ed3841730731496794bb44036800fb85692d80a6746a4b239d7c8"
+    },
+    "plate_map": {
+      "path": "plate_map.csv",
+      "sha256": "5828bea9c1e9155d033702eb2c23a5f9378bfc0e58821d95786dce92e7f9f5a4"
+    },
+    "plots": {
+      "comparison_grid": {
+        "path": "plots/comparison_grid.png",
+        "sha256": "25cda92edf254df0a18df65cdaeac4cf376f4c14d73b50b58ac6a52293ceef80"
+      },
+      "control_qc": {
+        "path": "plots/control_qc.png",
+        "sha256": "b6d1b4674ce7758e9ff46b2308eeace563064953f039b441a56e83c4dce72026"
+      },
+      "dose_response": {
+        "path": "plots/dose_response.png",
+        "sha256": "c0597c252b76d31dda1db708e98f2ab9698fcff02dbf8038cc0aa26fb9606050"
+      },
+      "plate_heatmap": {
+        "path": "plots/plate_heatmap.png",
+        "sha256": "9ed6460c4ae960cbb6dda8e0c604816abfcdc6dfadeb34cd7ae9f236661afd56"
+      },
+      "residual_heatmap": {
+        "path": "plots/residual_heatmap.png",
+        "sha256": "1f107186a708439500c01387d96fb65e88013f750ff14f6b8943df86ec400e44"
+      }
+    },
+    "problem_statement": {
+      "path": "problem_statement.txt",
+      "sha256": "bca51b76b19c0f7e7adb87ce773741e9036b27f9b541b21475ece324299d1384"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "34144d6a1b3c78d9c264de46d67e8237f04f7de1b7d7a976c1eb70e7ddd5cf4c"
+    }
+  },
+  "generation": {
+    "assay_type": "cell_viability_endpoint",
+    "benchmark_version": "1.0.0",
+    "case_id": "edge_effect_noisy",
+    "case_variant": "noisy",
+    "curves": {
+      "reference_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 0.3,
+        "top": 1.0
+      },
+      "test_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 1.0,
+        "top": 1.0
+      }
+    },
+    "doses_micromolar": [
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0
+    ],
+    "empty_count": 0,
+    "failure_mode": "edge_effect",
+    "layout_seed": 20260904,
+    "negative_control_count": 8,
+    "negative_control_mean": 1.0,
+    "noise_sd": 0.07,
+    "plate_count": 1,
+    "plate_format": "96_well",
+    "positive_control_count": 8,
+    "positive_control_mean": 0.15,
+    "replicates_per_condition": 5,
+    "root_seed": 1002,
+    "schema_version": "1.0.0",
+    "signal_direction": "lower_is_stronger",
+    "treatments": [
+      "reference_treatment",
+      "test_treatment"
+    ]
+  },
+  "ground_truth": {
+    "child_seeds": {
+      "baseline_noise": 2444487304,
+      "failure_injection": 1324579835
+    },
+    "injection_parameters": {
+      "direction": "increase",
+      "magnitude": 0.12,
+      "sides": [
+        "top",
+        "right"
+      ]
+    },
+    "mechanism": "edge_effect",
+    "simulated_traversal": null
+  },
+  "planted_failure_mode": "edge_effect",
+  "plausible_confounders": [
+    "Condition placement associated with boundary position."
+  ],
+  "root_seed": 1002,
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

@@ -13,7 +13,7 @@ The project is intentionally split between scientific computation and language-m
 
 ## Project status
 
-The project is in its initial implementation stage.
+The Week 1 synthetic benchmark foundation is complete and visually approved.
 
 Completed:
 
@@ -28,13 +28,14 @@ Completed:
 - Seven typed, deterministic, non-mutating failure injectors
 - Altair heatmaps, dose-response views, and control-QC plots with local PNG export
 - Deterministic case serialization with validation, SHA-256 integrity checks, and atomic writes
+- A version-controlled fourteen-case registry with layout fingerprints and hashed plots
+- Offline `generate-cases` and `validate-cases` CLI workflows
 
 Next:
 
-- Calibrate obvious and noisy case parameters through visual review
 - Add deterministic QC tools before introducing model-driven decisions
 
-The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.
+The CLI can generate and validate the Week 1 benchmark without Ollama, network access, or a model API.
 
 ## Scientific scope
 
@@ -87,6 +88,23 @@ Show the installed project version:
 ```bash
 uv run experiment-failure-investigator --version
 ```
+
+Generate the complete benchmark from a clean checkout:
+
+```bash
+uv run experiment-failure-investigator generate-cases --output cases
+```
+
+The generator refuses to write into a non-empty output directory. Use `--force`
+only after reviewing the existing generated diff. Validate an existing benchmark:
+
+```bash
+uv run experiment-failure-investigator validate-cases cases
+```
+
+The generated [case index](cases/index.json) records case IDs, modes, variants,
+seeds, paths, validation state, and layout fingerprints. Open the local
+[review grid](cases/review.html) to inspect every clean/injected comparison.
 
 ## Run the tests
 

@@ -1,0 +1,120 @@
+{
+  "assay_type": "cell_viability_endpoint",
+  "benchmark_version": "1.0.0",
+  "case_id": "batch_shift_obvious",
+  "case_variant": "obvious",
+  "expected_discriminating_evidence": [
+    "Response dynamic range differs between plates with controls still anchored."
+  ],
+  "files": {
+    "measurements": {
+      "path": "measurements.csv",
+      "sha256": "697f5ccf1486d1e29eba7a34e1c2737f6194c3ea03a8fc84f9c34fe463f845ed"
+    },
+    "metadata": {
+      "path": "metadata.json",
+      "sha256": "f62d7694e524d547fc3565e3ea12ab13cae33f69f34c465c068eb05b4848f657"
+    },
+    "plate_map": {
+      "path": "plate_map.csv",
+      "sha256": "85e5420ad2c1c8c4e3a29ac8a29ebb6a0ae7dd14c5a040f2a1fd444aa01be1ce"
+    },
+    "plots": {
+      "comparison_grid": {
+        "path": "plots/comparison_grid.png",
+        "sha256": "fbd004cc9e078390d3eed2942a016150e6f83a2ebcf01fc84eb25813412f31bf"
+      },
+      "control_qc": {
+        "path": "plots/control_qc.png",
+        "sha256": "d30e66aff7f70912ddeecc1e27aa3df9850003a1f2b50549d1b331a5d7e66616"
+      },
+      "dose_response": {
+        "path": "plots/dose_response.png",
+        "sha256": "11f334fb71753c042bbdc9c70df2cb84cc3d6c3c576859f3f002f0c5a9717c77"
+      },
+      "plate_heatmap": {
+        "path": "plots/plate_heatmap.png",
+        "sha256": "4af2300658a113d7598f6d3f33d15572ac33e6f8bca8b9fe400ccc0654056176"
+      },
+      "residual_heatmap": {
+        "path": "plots/residual_heatmap.png",
+        "sha256": "fbedde03d7c4b01d8e9400d85b3f00912ec31326075395da5869dd9632113a87"
+      }
+    },
+    "problem_statement": {
+      "path": "problem_statement.txt",
+      "sha256": "9c1fdfd19b1730ba5f876c278937d3d3f452f55a238415a9acabc63a951f623b"
+    },
+    "protocol": {
+      "path": "protocol.md",
+      "sha256": "34144d6a1b3c78d9c264de46d67e8237f04f7de1b7d7a976c1eb70e7ddd5cf4c"
+    }
+  },
+  "generation": {
+    "assay_type": "cell_viability_endpoint",
+    "benchmark_version": "1.0.0",
+    "case_id": "batch_shift_obvious",
+    "case_variant": "obvious",
+    "curves": {
+      "reference_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 0.3,
+        "top": 1.0
+      },
+      "test_treatment": {
+        "bottom": 0.15,
+        "hill_slope": 1.2,
+        "ic50": 1.0,
+        "top": 1.0
+      }
+    },
+    "doses_micromolar": [
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0
+    ],
+    "empty_count": 0,
+    "failure_mode": "batch_shift",
+    "layout_seed": 20260904,
+    "negative_control_count": 8,
+    "negative_control_mean": 1.0,
+    "noise_sd": 0.03,
+    "plate_count": 2,
+    "plate_format": "96_well",
+    "positive_control_count": 8,
+    "positive_control_mean": 0.15,
+    "replicates_per_condition": 5,
+    "root_seed": 1011,
+    "schema_version": "1.0.0",
+    "signal_direction": "lower_is_stronger",
+    "treatments": [
+      "reference_treatment",
+      "test_treatment"
+    ]
+  },
+  "ground_truth": {
+    "child_seeds": {
+      "baseline_noise": 338491463,
+      "failure_injection": 1293721736
+    },
+    "injection_parameters": {
+      "response_scale_factor": 0.7,
+      "shifted_plate_id": "plate_02"
+    },
+    "mechanism": "batch_shift",
+    "simulated_traversal": null
+  },
+  "planted_failure_mode": "batch_shift",
+  "plausible_confounders": [
+    "Plate-specific protocol, instrument, or sample-composition differences."
+  ],
+  "root_seed": 1011,
+  "schema_version": "1.0.0",
+  "signal_direction": "lower_is_stronger"
+}

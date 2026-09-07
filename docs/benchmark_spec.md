@@ -465,7 +465,8 @@ sorted keys, two-space indentation, UTF-8, and a final newline. Protocol and
 problem-statement line endings are normalized and blank content is rejected.
 
 The writer validates all in-memory content before creating a staging directory,
-serializes the five investigator-visible inputs, computes their SHA-256 hashes,
+serializes the five investigator-visible inputs and requested plots, computes
+their SHA-256 hashes,
 builds the evaluation-only manifest, and loads the staged case through the same
 hash and content validator used for existing cases. Only then is the staging
 directory atomically renamed to its final case ID. Existing case directories are
@@ -477,6 +478,12 @@ mismatches, and symlinks that resolve outside the case directory are rejected.
 Public measurement and plate-map tables must contain exactly their documented
 columns, preventing private latent signals and injected-effect truth from leaking
 into investigator-visible inputs.
+
+Each case metadata file records a layout fingerprint derived from plate format and
+the canonically sorted `well`, `well_role`, `treatment`, and `dose` assignments.
+It excludes measurements, case and plate identifiers, seeds, sample IDs, and
+interchangeable replicate labels. Repeated identical layouts on a multi-plate case
+therefore have the same fingerprint as a single instance of that layout.
 
 Step 6 implements these cross-row and cross-file checks at both write and load
 time. Step 2 defines the typed configuration and manifest boundaries they consume.
@@ -498,12 +505,14 @@ These requirements apply throughout implementation:
 - Evaluation artifacts must identify their layout split, unique layout count, and plate formats; fixed-layout results must be labeled explicitly.
 - Held-out layout fingerprints must not overlap layouts used to develop prompts, tools, thresholds, or deterministic diagnostics.
 
-## Review gate
+## Week 1 review gate
 
-Before implementing the numerical generator, review:
+Before freezing the generated benchmark, review:
 
 - Whether the two-treatment design supports the intended scientific comparisons.
 - Whether the default control allocation and dose series are plausible for the synthetic MVP.
+- The fourteen clean/injected comparison grids and the limitations recorded in
+  [`week_1_review.md`](week_1_review.md).
 - Whether hidden ground truth is cleanly separated from investigator-visible inputs.
 - Whether each failure mode has observable evidence and appropriately stated identification limits.
 - Whether any parameter is accidentally presented as a real-world acceptance threshold.

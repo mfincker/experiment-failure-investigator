@@ -356,16 +356,16 @@ Verification:
 
 ## Week 1 exit checklist
 
-- [ ] Benchmark specification documents the clean model and all seven mechanisms.
-- [ ] Observable inputs and hidden ground truth are clearly separated.
-- [ ] Fourteen named cases are generated from committed configurations.
-- [ ] Every case contains measurements, plate map, metadata, protocol, problem statement, manifest, and plots.
-- [ ] Seeds and serialized file hashes make the cases reproducible and tamper-evident.
-- [ ] Unit and integration tests pass without Ollama or network access.
-- [ ] Obvious cases clearly express one mechanism.
-- [ ] Noisy cases remain solvable without becoming mixed-cause cases.
-- [ ] A human has reviewed the raw tables and plots for all fourteen cases.
-- [ ] The README contains exact generate, validate, and test commands.
+- [x] Benchmark specification documents the clean model and all seven mechanisms.
+- [x] Observable inputs and hidden ground truth are clearly separated.
+- [x] Fourteen named cases are generated from committed configurations.
+- [x] Every case contains measurements, plate map, metadata, protocol, problem statement, manifest, and plots.
+- [x] Seeds and serialized file hashes make the cases reproducible and tamper-evident.
+- [x] Unit and integration tests pass without Ollama or network access.
+- [x] Obvious cases clearly express one mechanism.
+- [x] Noisy cases remain solvable without becoming mixed-cause cases.
+- [x] A human has reviewed the raw tables and plots for all fourteen cases.
+- [x] The README contains exact generate, validate, and test commands.
 
 ## Decisions deliberately deferred
 

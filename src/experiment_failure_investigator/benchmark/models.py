@@ -264,6 +264,7 @@ class CaseFiles(StrictModel):
     metadata: ArtifactReference
     protocol: ArtifactReference
     problem_statement: ArtifactReference
+    plots: dict[str, ArtifactReference] = Field(default_factory=dict)
 
 
 class PlateMetadata(StrictModel):
@@ -290,6 +291,7 @@ class CaseMetadata(StrictModel):
     case_id: CaseId
     assay_type: AssayType
     signal_direction: SignalDirection
+    layout_fingerprint: Sha256
     plates: list[PlateMetadata] = Field(min_length=1)
 
     @field_validator("plates")
