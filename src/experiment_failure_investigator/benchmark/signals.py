@@ -33,6 +33,7 @@ class CleanGenerationMetadata:
     """Private reproducibility metadata for one clean generation step."""
 
     case_id: str
+    root_seed: int
     baseline_noise_seed: int
     noise_sd: float
     plate_count: int
@@ -160,6 +161,7 @@ def generate_clean_assay(
         latent_signals=latent_signals,
         metadata=CleanGenerationMetadata(
             case_id=config.case_id,
+            root_seed=config.root_seed,
             baseline_noise_seed=noise_seed,
             noise_sd=config.noise_sd,
             plate_count=config.plate_count,

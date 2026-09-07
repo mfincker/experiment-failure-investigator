@@ -25,11 +25,12 @@ Completed:
 - Reproducible case-manifest JSON Schema
 - Geometry-aware balanced plate-layout generation and independent audits
 - Deterministic clean assay generation with private latent-signal records
+- Six typed, deterministic, non-mutating failure injectors
 
 Next:
 
-- Implement the six pure failure injectors
 - Add case serialization and validation
+- Implement deterministic detectability checks and Altair inspection plots
 - Add deterministic QC tools before introducing model-driven decisions
 
 The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.

@@ -240,12 +240,23 @@ The manifest itself is not included in its artifact hash map, avoiding a self-re
 
 ## Planted mechanisms
 
+Numerical injectors preserve the clean expected signal and baseline-noise columns in private generation data and add a per-well `injected_effect`. Their public measurement satisfies:
+
+```text
+raw_signal = expected_signal + baseline_noise + injected_effect
+```
+
+Layout confounding is different: it rearranges experimental assignments and their expected signals while leaving each physical well's baseline-noise draw in place. Every injector returns a structured private record containing the mechanism, typed parameters, stable child seed, and affected-well count. None of these private fields is investigator-visible.
+
+The initial magnitudes below are provisional benchmark calibration values. They are chosen to make deterministic mechanism checks possible and will be reviewed with Altair plots in Step 7. They are not laboratory acceptance thresholds.
+
 ### 1. Edge effect
 
 Mechanism:
 
 - Shift signals in boundary wells by a configured signed magnitude.
 - Do not change well roles, treatments, or doses.
+- Initial increase: `0.25` for obvious cases and `0.12` for noisy cases.
 
 Expected observable evidence:
 
@@ -263,6 +274,7 @@ Mechanism:
 
 - Apply a monotonic gradient using a simulated row-wise or column-wise traversal.
 - Store the simulated traversal only in private generator truth.
+- Initial peak-to-peak change: `0.30` for obvious cases and `0.15` for noisy cases.
 
 Expected observable evidence:
 
@@ -283,6 +295,7 @@ Useful follow-up:
 Mechanism:
 
 - Replace the balanced layout with one where treatment or dose is systematically associated with position.
+- Initially order assignments by treatment and dose; both variants use the same confounded design while their baseline noise differs.
 
 Expected observable evidence:
 
@@ -298,6 +311,7 @@ Correct behavior:
 Mechanism:
 
 - Move the positive-control mean toward the negative-control mean while leaving labels unchanged.
+- Initially remove `80%` of control separation in obvious cases and `55%` in noisy cases.
 
 Expected observable evidence:
 
@@ -315,6 +329,7 @@ Mechanism:
 
 - Generate at least two otherwise comparable plates or batches.
 - Apply a configured shift to one batch and expose the batch label in metadata.
+- Initial signed shift magnitude: `0.30` for obvious cases and `0.15` for noisy cases.
 
 Expected observable evidence:
 
@@ -331,6 +346,7 @@ Important alternatives:
 Mechanism:
 
 - Flatten the test-treatment curve while leaving positive controls and the reference-treatment curve responsive.
+- Initially flatten the test treatment at normalized expected signal `1.00`; both variants use the same flat expectation while their baseline noise differs.
 
 Expected observable evidence:
 
