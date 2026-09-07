@@ -98,7 +98,7 @@ This strategy preserves the learning goal: Codex accelerates development, while 
 
 The user provides:
 
-1. A CSV containing measurements from a 96-well assay
+1. A CSV containing measurements from a plate-based assay
 2. A plate map describing samples, controls, doses, and replicates
 3. Minimal experiment metadata, such as batch, operator, run date, and instrument
 4. A generic protocol or assay description
@@ -122,14 +122,15 @@ The system produces:
 
 Use a generic dose-response or cell-viability assay. The synthetic-data generator should create realistic controls, replicates, doses, noise, missing values, and plate-layout effects.
 
-The first benchmark should include six planted failure modes:
+The first benchmark includes seven planted failure modes:
 
 1. **Edge effect:** measurements depend on proximity to the plate boundary.
 2. **Pipetting drift:** values show a systematic row-wise or column-wise gradient consistent with a dispensing or timing effect. Because actual dispense order will usually be unavailable, the agent must treat pipetting drift as a hypothesis rather than a confirmed cause and keep other spatial explanations in consideration.
-3. **Plate-layout confounding:** treatment or dose is confounded with spatial position.
-4. **Failed or weak controls:** the positive and negative controls are insufficiently separated.
-5. **Batch shift:** one run, operator, reagent lot, or instrument batch differs systematically.
-6. **True biological non-response:** QC is acceptable, but the tested condition genuinely lacks the expected effect.
+3. **Transient tip clog:** selected simulated tip channels deviate for a limited run of dispense groups and then recover; without logs, the investigator can only identify a localized pattern consistent with a dispensing fault.
+4. **Plate-layout confounding:** treatment or dose is confounded with spatial position.
+5. **Failed or weak controls:** the positive and negative controls are insufficiently separated.
+6. **Batch response-scale change:** one plate has a different assay dynamic range while its negative-control anchor remains stable.
+7. **True biological non-response:** QC is acceptable, but the tested condition genuinely lacks the expected effect.
 
 Start with single-cause cases. Add mixed-cause and ambiguous cases only after the single-cause benchmark is reliable.
 
@@ -138,6 +139,12 @@ Start with single-cause cases. Add mixed-cause and ambiguous cases only after th
 The balanced 96-well design is an evaluation fixture, not the application's input contract. Application code and prompts must not assume fixed control counts, a shared dose series, equal replicate counts, the presence of a reference treatment, or 96-well geometry. The case loader will derive a typed design and capability summary from each experiment. Tools must either operate on the observed design or return a structured `not_applicable` or `insufficient_data` result.
 
 Before the system is considered complete, the evaluation suite must include format-shift cases such as altered control allocations, unequal replicates, no reference treatment, missing wells, and 384-well plates. This distinguishes genuine scientific reasoning from memorization of the MVP layout.
+
+For the current MVP, a multi-plate experiment means that each plate is a complete
+replicate of the same experimental design. Experiments that distribute biological
+condition replicates across plates are not supported by the initial diagnostics;
+they require explicit incomplete-block and plate-effect handling and remain in the
+backlog. The application must report this boundary rather than pooling such data.
 
 ## System architecture
 
@@ -309,7 +316,7 @@ Evaluation is part of the core project, not a final polish step.
 
 Create at least 30 labeled cases:
 
-- 18 straightforward cases: three per failure mode
+- 21 straightforward cases: three per failure mode
 - 6 noisy but solvable cases
 - 3 ambiguous cases where abstention is appropriate
 - 3 clean experiments where no technical failure should be inferred
@@ -381,7 +388,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 
 **Deliverable**
 
-- Twelve initial cases: one obvious and one noisy example per failure type.
+- Fourteen initial cases: one obvious and one noisy example per failure type.
 - A short benchmark specification describing how every failure is generated.
 - A deterministic generator test suite and saved inspection plots.
 - The executable plan in [`week_1_implementation_plan.md`](week_1_implementation_plan.md).
@@ -399,8 +406,8 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 
 **Tasks**
 
-- Implement the Pydantic models.
-- Implement input validation.
+- Implement investigator-facing Pydantic contracts that exclude benchmark truth.
+- Derive a design and capability summary from validated public inputs.
 - Build and test the initial deterministic tools.
 - Create a non-agentic baseline report.
 - Add stable evidence identifiers and provenance.
@@ -408,6 +415,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 **Deliverable**
 
 - A CLI that produces a deterministic QC report for any valid benchmark case.
+- The executable plan in [`week_2_implementation_plan.md`](week_2_implementation_plan.md).
 
 **Exit criterion**
 

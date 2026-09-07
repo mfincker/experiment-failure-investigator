@@ -33,7 +33,9 @@ Completed:
 
 Next:
 
-- Add deterministic QC tools before introducing model-driven decisions
+- Execute the detailed [Week 2 implementation plan](docs/week_2_implementation_plan.md)
+  to add deterministic QC tools and evidence-linked baseline reports before
+  introducing model-driven decisions.
 
 The CLI can generate and validate the Week 1 benchmark without Ollama, network access, or a model API.
 

@@ -52,6 +52,23 @@ Add 384-well cases and scientifically applicable multi-plate cases. Evaluate for
 
 **Done when:** spatial analysis derives geometry from case metadata and evaluation results are stratified by plate format.
 
+### Support biological condition replicates split across plates
+
+**When:** after the complete-replicate multi-plate diagnostics from Week 2 are
+stable.
+
+Support experiments where biological replicates of a condition are distributed
+across multiple plates and no single plate contains the complete experimental
+design. This requires an explicit experimental-unit model, condition-to-plate
+coverage, appropriate normalization or plate-effect handling, and diagnostics for
+incomplete-block designs. Until then, the application must identify this design as
+unsupported for cross-plate or pooled analysis rather than treating plates as
+replicates or pooling wells naively.
+
+**Done when:** validated split-replicate fixtures can be analyzed without
+confounding biological condition, plate, and batch effects, and the report states
+which comparisons are identifiable.
+
 ## Explicitly deferred infrastructure
 
 A dedicated layout registry is not planned now. Version-controlled case configuration and generated fingerprints should be sufficient for the expected benchmark size. Reconsider a registry only if managing layouts through ordinary case metadata becomes error-prone.
