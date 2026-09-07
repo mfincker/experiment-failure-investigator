@@ -8,8 +8,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
-from experiment_failure_investigator.analysis.contracts import PublicArtifactHashes
+from experiment_failure_investigator.analysis.contracts import (
+    InvestigatorCase,
+    InvestigatorMeasurement,
+    MeasurementStatus,
+    PublicArtifactHashes,
+)
 from experiment_failure_investigator.analysis.design import build_investigator_case
 from experiment_failure_investigator.benchmark.adapter import load_investigator_case
 from experiment_failure_investigator.benchmark.layouts import enumerate_wells
@@ -32,12 +38,33 @@ TEST_HASHES = PublicArtifactHashes(
 )
 
 
+@pytest.mark.parametrize(
+    ("raw_signal", "measurement_status"),
+    [
+        (None, MeasurementStatus.OBSERVED),
+        (1.0, MeasurementStatus.NULL),
+        (1.0, MeasurementStatus.NONFINITE),
+    ],
+)
+def test_measurement_value_and_status_must_agree(
+    raw_signal: float | None,
+    measurement_status: MeasurementStatus,
+) -> None:
+    with pytest.raises(ValidationError):
+        InvestigatorMeasurement(
+            plate_id="plate_01",
+            well="A01",
+            raw_signal=raw_signal,
+            measurement_status=measurement_status,
+        )
+
+
 def _build_from_loaded(
     case_directory: Path,
     *,
     measurements: pd.DataFrame | None = None,
     plate_map: pd.DataFrame | None = None,
-):
+) -> InvestigatorCase:
     loaded = load_case(case_directory)
     return build_investigator_case(
         measurements=loaded.measurements if measurements is None else measurements,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -45,12 +46,30 @@ class InvestigatorMetadata(StrictModel):
     plates: tuple[InvestigatorPlateMetadata, ...] = Field(min_length=1)
 
 
+class MeasurementStatus(StrEnum):
+    """Validity of a source measurement after public-input parsing."""
+
+    OBSERVED = "observed"
+    NULL = "null"
+    NONFINITE = "nonfinite"
+
+
 class InvestigatorMeasurement(StrictModel):
     """One public assay measurement with benchmark labels removed."""
 
     plate_id: str = Field(min_length=1)
     well: str = Field(pattern=r"^[A-Z][0-9]{2}$")
     raw_signal: float | None = Field(default=None, allow_inf_nan=False)
+    measurement_status: MeasurementStatus
+
+    @model_validator(mode="after")
+    def validate_signal_status(self) -> InvestigatorMeasurement:
+        if self.measurement_status is MeasurementStatus.OBSERVED:
+            if self.raw_signal is None:
+                raise ValueError("observed measurements require a signal")
+        elif self.raw_signal is not None:
+            raise ValueError("null or nonfinite measurements cannot retain a signal")
+        return self
 
 
 class InvestigatorPlateMapWell(StrictModel):

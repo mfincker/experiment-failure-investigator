@@ -19,6 +19,7 @@ from experiment_failure_investigator.analysis.contracts import (
     InvestigatorMetadata,
     InvestigatorPlateMapWell,
     InvestigatorPlateMetadata,
+    MeasurementStatus,
     PlateDesignSummary,
     PublicArtifactHashes,
     TreatmentDoseSeries,
@@ -208,6 +209,7 @@ def _parse_measurements(
         raw_value = cast(Any, row.raw_signal)
         if pd.isna(raw_value):
             signal = None
+            measurement_status = MeasurementStatus.NULL
             null_counts[plate_id] += 1
         else:
             try:
@@ -216,11 +218,18 @@ def _parse_measurements(
                 raise ValueError("raw_signal must be numeric when present") from error
             if np.isfinite(parsed):
                 signal = parsed
+                measurement_status = MeasurementStatus.OBSERVED
             else:
                 signal = None
+                measurement_status = MeasurementStatus.NONFINITE
                 nonfinite_counts[plate_id] += 1
         records.append(
-            InvestigatorMeasurement(plate_id=plate_id, well=well, raw_signal=signal)
+            InvestigatorMeasurement(
+                plate_id=plate_id,
+                well=well,
+                raw_signal=signal,
+                measurement_status=measurement_status,
+            )
         )
         keys.add((plate_id, well))
     return (

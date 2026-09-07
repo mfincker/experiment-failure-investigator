@@ -8,11 +8,14 @@ from experiment_failure_investigator.analysis.contracts import (
     InvestigatorMeasurement,
     InvestigatorMetadata,
     InvestigatorPlateMapWell,
+    MeasurementStatus,
     PlateDesignSummary,
     PublicArtifactHashes,
     TreatmentDoseSeries,
 )
 from experiment_failure_investigator.analysis.design import build_investigator_case
+from experiment_failure_investigator.analysis.controls import summarize_controls
+from experiment_failure_investigator.analysis.missingness import inspect_missingness
 from experiment_failure_investigator.analysis.results import (
     EvidenceId,
     EvidenceRecord,
@@ -39,6 +42,7 @@ __all__ = [
     "InvestigatorMeasurement",
     "InvestigatorMetadata",
     "InvestigatorPlateMapWell",
+    "MeasurementStatus",
     "PlateDesignSummary",
     "PublicArtifactHashes",
     "ResultWarning",
@@ -52,4 +56,6 @@ __all__ = [
     "build_evidence_record",
     "build_investigator_case",
     "canonical_json",
+    "inspect_missingness",
+    "summarize_controls",
 ]
