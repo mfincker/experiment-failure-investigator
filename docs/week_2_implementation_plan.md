@@ -72,6 +72,23 @@ item.
 - Multiple comparisons, small groups, failed fits, and near-zero denominators must
   produce warnings or structured insufficient-data results.
 
+### Literal empty wells
+
+An `empty` well is a physically unused plate position, not an assay blank. Its
+instrument readout may be finite, null, non-finite, or absent and has no assumed
+biological meaning. Week 2 therefore:
+
+- records empty-well readout completeness separately without raising ordinary
+  assay-missingness warnings;
+- excludes empty wells from replicate capabilities, control summaries,
+  dose-response fits, condition residuals, spatial signal statistics, and matched
+  batch comparisons; and
+- renders empty positions distinctly in raw heatmaps while excluding their values
+  from biological signal color domains.
+
+Detecting unexpected content in an empty position remains a separate backlog
+diagnostic because it requires an assay- and instrument-specific readout policy.
+
 ## Proposed repository additions
 
 ```text
@@ -180,6 +197,13 @@ a hidden case-to-label lookup.
 Each step ends with a reviewable checkpoint. Codex should implement and verify one
 checkpoint at a time, then summarize scientific assumptions before proceeding
 when those assumptions materially affect interpretation.
+
+Implementation status as of the diagnostic-layer review checkpoint:
+
+- Steps 1–4 are implemented and committed.
+- Steps 5–7 are implemented together for scientific and visual review.
+- Steps 8–10 remain pending; baseline interpretation and CLI orchestration will
+  start only after the diagnostic outputs below are approved.
 
 ### 1. Add the investigator-safe loader and design summary
 

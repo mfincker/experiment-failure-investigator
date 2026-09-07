@@ -44,6 +44,7 @@ from experiment_failure_investigator.benchmark.models import (
 )
 from experiment_failure_investigator.benchmark.plotting import (
     PlotMetadata,
+    PublicPlotMetadata,
     build_comparison_grid,
     build_control_qc_chart,
     build_dose_response_chart,
@@ -106,6 +107,7 @@ __all__ = [
     "PlateFormat",
     "PlateMetadata",
     "PlotMetadata",
+    "PublicPlotMetadata",
     "build_comparison_grid",
     "PipettingDriftParameters",
     "TransientTipClogParameters",

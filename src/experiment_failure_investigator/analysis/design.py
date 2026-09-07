@@ -242,11 +242,14 @@ def _parse_measurements(
 
 def _derive_design(
     plate_map: tuple[InvestigatorPlateMapWell, ...],
+    measurements: tuple[InvestigatorMeasurement, ...],
     measurement_keys: set[tuple[str, str]],
-    null_counts: Counter[str],
-    nonfinite_counts: Counter[str],
     plate_ids: tuple[str, ...],
 ) -> DesignSummary:
+    measurement_lookup = {
+        (measurement.plate_id, measurement.well): measurement
+        for measurement in measurements
+    }
     wells_by_plate = {
         plate_id: tuple(well for well in plate_map if well.plate_id == plate_id)
         for plate_id in plate_ids
@@ -277,8 +280,40 @@ def _derive_design(
             )
         )
         role_counts = Counter(well.well_role for well in wells)
-        missing_measurements = sum(
-            (plate_id, well.well) not in measurement_keys for well in wells
+        assay_wells = tuple(
+            well for well in wells if well.well_role is not WellRole.EMPTY
+        )
+        empty_wells = tuple(
+            well for well in wells if well.well_role is WellRole.EMPTY
+        )
+
+        def missing_count(selected: tuple[InvestigatorPlateMapWell, ...]) -> int:
+            return sum(
+                (plate_id, well.well) not in measurement_keys for well in selected
+            )
+
+        def status_count(
+            selected: tuple[InvestigatorPlateMapWell, ...],
+            status: MeasurementStatus,
+        ) -> int:
+            return sum(
+                (measurement := measurement_lookup.get((plate_id, well.well)))
+                is not None
+                and measurement.measurement_status is status
+                for well in selected
+            )
+
+        missing_measurements = missing_count(assay_wells)
+        empty_missing_measurements = missing_count(empty_wells)
+        null_measurements = status_count(assay_wells, MeasurementStatus.NULL)
+        nonfinite_measurements = status_count(
+            assay_wells, MeasurementStatus.NONFINITE
+        )
+        empty_null_measurements = status_count(
+            empty_wells, MeasurementStatus.NULL
+        )
+        empty_nonfinite_measurements = status_count(
+            empty_wells, MeasurementStatus.NONFINITE
         )
         plate_summaries.append(
             PlateDesignSummary(
@@ -289,8 +324,12 @@ def _derive_design(
                 expected_well_count=plate_format.capacity,
                 missing_wells=missing,
                 missing_measurement_count=missing_measurements,
-                null_measurement_count=null_counts[plate_id],
-                nonfinite_measurement_count=nonfinite_counts[plate_id],
+                null_measurement_count=null_measurements,
+                nonfinite_measurement_count=nonfinite_measurements,
+                empty_well_count=len(empty_wells),
+                empty_missing_measurement_count=empty_missing_measurements,
+                empty_null_measurement_count=empty_null_measurements,
+                empty_nonfinite_measurement_count=empty_nonfinite_measurements,
                 missing_design_annotation_count=annotation_count,
                 role_counts=dict(
                     sorted(role_counts.items(), key=lambda item: item[0].value)
@@ -358,7 +397,7 @@ def _derive_design(
         count
         for condition in coverage
         for count in condition.counts_by_plate.values()
-        if count > 0
+        if condition.well_role is not WellRole.EMPTY and count > 0
     )
     available_roles = tuple(
         sorted({well.well_role for well in plate_map}, key=lambda role: role.value)
@@ -389,8 +428,24 @@ def _derive_design(
         total_missing_measurement_count=sum(
             plate.missing_measurement_count for plate in plate_summaries
         ),
-        total_null_measurement_count=sum(null_counts.values()),
-        total_nonfinite_measurement_count=sum(nonfinite_counts.values()),
+        total_null_measurement_count=sum(
+            plate.null_measurement_count for plate in plate_summaries
+        ),
+        total_nonfinite_measurement_count=sum(
+            plate.nonfinite_measurement_count for plate in plate_summaries
+        ),
+        total_empty_well_count=sum(
+            plate.empty_well_count for plate in plate_summaries
+        ),
+        total_empty_missing_measurement_count=sum(
+            plate.empty_missing_measurement_count for plate in plate_summaries
+        ),
+        total_empty_null_measurement_count=sum(
+            plate.empty_null_measurement_count for plate in plate_summaries
+        ),
+        total_empty_nonfinite_measurement_count=sum(
+            plate.empty_nonfinite_measurement_count for plate in plate_summaries
+        ),
         capabilities=DesignCapabilities(
             has_negative_controls=WellRole.NEGATIVE_CONTROL in available_roles,
             has_positive_controls=WellRole.POSITIVE_CONTROL in available_roles,
@@ -422,7 +477,7 @@ def build_investigator_case(
         raise ValueError("problem statement must not be blank")
 
     parsed_map = _parse_plate_map(plate_map)
-    parsed_measurements, measurement_keys, null_counts, nonfinite_counts = (
+    parsed_measurements, measurement_keys, _, _ = (
         _parse_measurements(measurements, metadata.case_id)
     )
     map_keys = {(well.plate_id, well.well) for well in parsed_map}
@@ -451,9 +506,8 @@ def build_investigator_case(
     )
     design = _derive_design(
         parsed_map,
+        parsed_measurements,
         measurement_keys,
-        null_counts,
-        nonfinite_counts,
         metadata_plate_ids,
     )
     return InvestigatorCase(

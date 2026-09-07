@@ -39,12 +39,33 @@ class PlotMetadata:
 
 
 @dataclass(frozen=True)
+class PublicPlotMetadata:
+    """Investigator-safe chart provenance without benchmark truth."""
+
+    case_id: str
+
+
+@dataclass(frozen=True)
 class _AssayTableView:
     plate_map: pd.DataFrame
     measurements: pd.DataFrame
 
 
-def _title(name: str, metadata: PlotMetadata, note: str) -> alt.TitleParams:
+def _title(
+    name: str,
+    metadata: PlotMetadata | PublicPlotMetadata,
+    note: str,
+) -> alt.TitleParams:
+    if isinstance(metadata, PublicPlotMetadata):
+        return alt.TitleParams(
+            text=f"{name} — {metadata.case_id}",
+            subtitle=[note, "Investigator-visible measurements and plate map only"],
+            anchor="start",
+            color="#111827",
+            fontSize=16,
+            subtitleColor="#4B5563",
+            subtitleFontSize=11,
+        )
     scenario = metadata.failure_label.replace("_", " ")
     variant = metadata.variant.replace("_", " ")
     return alt.TitleParams(
@@ -87,16 +108,28 @@ def _plot_frame(assay: AssayTables) -> pd.DataFrame:
     if assay.measurements.duplicated(["plate_id", "well"]).any():
         raise ValueError("measurements contain duplicate plate/well keys")
 
+    measurement_columns = ["plate_id", "well", "raw_signal"]
+    if "condition_residual" in assay.measurements.columns:
+        measurement_columns.append("condition_residual")
     frame = assay.plate_map.merge(
-        assay.measurements[["plate_id", "well", "raw_signal"]],
+        assay.measurements[measurement_columns],
         on=["plate_id", "well"],
         how="inner",
         validate="one_to_one",
     )
     if len(frame) != len(assay.plate_map) or len(frame) != len(assay.measurements):
         raise ValueError("plate-map and measurement keys do not match")
-    if not np.isfinite(frame["raw_signal"]).all():
-        raise ValueError("inspection charts require finite raw signals")
+    finite_signal = np.isfinite(frame["raw_signal"])
+    invalid_non_empty = (~finite_signal) & (
+        frame["well_role"] != WellRole.EMPTY.value
+    )
+    if invalid_non_empty.any():
+        raise ValueError("non-empty inspection wells require finite raw signals")
+    if (
+        "condition_residual" in frame.columns
+        and not np.isfinite(frame["condition_residual"]).all()
+    ):
+        raise ValueError("inspection charts require finite condition residuals")
     return frame.sort_values(["plate_id", "row", "column"], kind="stable").reset_index(
         drop=True
     )
@@ -111,9 +144,18 @@ def shared_signal_domain(
         raise ValueError("at least one assay is required")
     if padding_fraction < 0:
         raise ValueError("padding fraction must not be negative")
-    values = np.concatenate(
-        [_plot_frame(assay)["raw_signal"].to_numpy(dtype=float) for assay in assays]
-    )
+    frames = [_plot_frame(assay) for assay in assays]
+    eligible = [
+        frame.loc[
+            (frame["well_role"] != WellRole.EMPTY.value)
+            & frame["raw_signal"].notna(),
+            "raw_signal",
+        ].to_numpy(dtype=float)
+        for frame in frames
+    ]
+    if not any(len(values) for values in eligible):
+        raise ValueError("signal domain requires a finite non-empty-well signal")
+    values = np.concatenate([values for values in eligible if len(values)])
     lower = float(values.min())
     upper = float(values.max())
     span = upper - lower
@@ -123,6 +165,11 @@ def shared_signal_domain(
 
 def _residual_frame(assay: AssayTables) -> pd.DataFrame:
     frame = _plot_frame(assay)
+    frame = frame[frame["well_role"] != WellRole.EMPTY.value].copy()
+    if frame.empty:
+        raise ValueError("residual heatmap requires at least one non-empty well")
+    if "condition_residual" in frame.columns:
+        return frame
     condition_columns = ["well_role", "treatment", "dose"]
     condition_mean = frame.groupby(
         condition_columns,
@@ -181,7 +228,7 @@ def _facet_if_needed(
 
 def build_plate_heatmap(
     assay: AssayTables,
-    metadata: PlotMetadata,
+    metadata: PlotMetadata | PublicPlotMetadata,
     *,
     signal_domain: tuple[float, float] | None = None,
 ) -> alt.LayerChart | alt.FacetChart:
@@ -206,10 +253,14 @@ def build_plate_heatmap(
             sort=row_order,
             axis=alt.Axis(grid=False),
         ),
-        color=alt.Color(
-            "raw_signal:Q",
-            title="Raw signal",
-            scale=alt.Scale(domain=list(domain), scheme="viridis", clamp=True),
+        color=alt.condition(
+            f"datum.well_role === '{WellRole.EMPTY.value}'",
+            alt.value("#D1D5DB"),
+            alt.Color(
+                "raw_signal:Q",
+                title="Raw signal",
+                scale=alt.Scale(domain=list(domain), scheme="viridis", clamp=True),
+            ),
         ),
         tooltip=[
             alt.Tooltip("plate_id:N", title="Plate"),
@@ -223,9 +274,16 @@ def build_plate_heatmap(
     labels = base.mark_text(fontSize=8).encode(
         x=alt.X("column:O", sort=column_order),
         y=alt.Y("row:O", sort=row_order),
-        text=alt.Text("raw_signal:Q", format=".2f"),
+        text=alt.condition(
+            f"datum.well_role === '{WellRole.EMPTY.value}'",
+            alt.value("empty"),
+            alt.Text("raw_signal:Q", format=".2f"),
+        ),
         color=alt.condition(
-            f"datum.raw_signal >= {midpoint}",
+            (
+                f"datum.well_role === '{WellRole.EMPTY.value}' || "
+                f"datum.raw_signal >= {midpoint}"
+            ),
             alt.value("#111827"),
             alt.value("#FFFFFF"),
         ),
@@ -246,7 +304,7 @@ def build_plate_heatmap(
 
 def build_residual_heatmap(
     assay: AssayTables,
-    metadata: PlotMetadata,
+    metadata: PlotMetadata | PublicPlotMetadata,
     *,
     residual_domain: tuple[float, float] | None = None,
 ) -> alt.LayerChart | alt.FacetChart:

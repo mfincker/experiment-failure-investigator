@@ -20,7 +20,7 @@ from pydantic import (
 )
 
 from experiment_failure_investigator.analysis.contracts import PublicArtifactHashes
-from experiment_failure_investigator.benchmark.models import StrictModel, WellRole
+from experiment_failure_investigator.benchmark.models import Sha256, StrictModel, WellRole
 
 EvidenceId = Annotated[str, StringConstraints(pattern=r"^ev_[0-9a-f]{20}$")]
 
@@ -187,6 +187,23 @@ class ScientificProvenance(StrictModel):
     public_artifact_hashes: PublicArtifactHashes
 
 
+class ArtifactAttachment(StrictModel):
+    """A non-numeric file artifact produced by a scientific tool."""
+
+    name: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    path: str = Field(min_length=1)
+    sha256: Sha256
+    media_type: str = Field(pattern=r"^[a-z0-9.+-]+/[a-z0-9.+-]+$")
+    description: str = Field(min_length=1)
+
+    @field_validator("path", "description")
+    @classmethod
+    def reject_blank_attachment_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("attachment text must not be blank")
+        return value
+
+
 def build_evidence_id(
     *,
     tool_name: str,
@@ -247,6 +264,7 @@ class ScientificToolResult(StrictModel):
     parameters: Mapping[str, JsonValue] = Field(default_factory=dict)
     scope: EvidenceScope
     evidence: tuple[EvidenceRecord, ...] = ()
+    attachments: tuple[ArtifactAttachment, ...] = ()
     warnings: tuple[ResultWarning, ...] = ()
     limitations: tuple[str, ...] = ()
     provenance: ScientificProvenance
@@ -273,6 +291,18 @@ class ScientificToolResult(StrictModel):
         if len(ids) != len(set(ids)):
             raise ValueError("evidence IDs must be unique within a tool result")
         return tuple(sorted(values, key=lambda evidence: evidence.evidence_id))
+
+    @field_validator("attachments")
+    @classmethod
+    def canonicalize_attachments(
+        cls,
+        values: tuple[ArtifactAttachment, ...],
+    ) -> tuple[ArtifactAttachment, ...]:
+        names = [attachment.name for attachment in values]
+        paths = [attachment.path for attachment in values]
+        if len(names) != len(set(names)) or len(paths) != len(set(paths)):
+            raise ValueError("attachment names and paths must be unique")
+        return tuple(sorted(values, key=lambda attachment: attachment.name))
 
     @field_validator("warnings")
     @classmethod
@@ -301,9 +331,11 @@ class ScientificToolResult(StrictModel):
             raise ValueError("non-success results require a status reason")
         if (
             self.status in {ToolStatus.NOT_APPLICABLE, ToolStatus.ERROR}
-            and self.evidence
+            and (self.evidence or self.attachments)
         ):
-            raise ValueError(f"{self.status.value} results must not contain evidence")
+            raise ValueError(
+                f"{self.status.value} results must not contain evidence or attachments"
+            )
         if self.scope.case_id != self.provenance.case_id:
             raise ValueError("result scope and provenance case IDs must match")
 

@@ -73,9 +73,28 @@ def inspect_missingness(case: InvestigatorCase) -> ScientificToolResult:
     for plate_summary in case.design.plates:
         plate_id = plate_summary.plate_id
         plate_scope = EvidenceScope(case_id=case.case_id, plate_ids=(plate_id,))
-        measurement_row_count = sum(
-            measurement.plate_id == plate_id for measurement in case.measurements
+        assay_wells = [
+            well
+            for well in wells_by_plate[plate_id]
+            if well.well_role is not WellRole.EMPTY
+        ]
+        assay_measurements = [
+            measurements.get((plate_id, well.well)) for well in assay_wells
+        ]
+        missing_measurement_count = sum(
+            measurement is None for measurement in assay_measurements
         )
+        null_measurement_count = sum(
+            measurement is not None
+            and measurement.measurement_status is MeasurementStatus.NULL
+            for measurement in assay_measurements
+        )
+        nonfinite_measurement_count = sum(
+            measurement is not None
+            and measurement.measurement_status is MeasurementStatus.NONFINITE
+            for measurement in assay_measurements
+        )
+        measurement_row_count = len(assay_wells) - missing_measurement_count
         treatment_well_count = sum(
             well.well_role is WellRole.TREATMENT
             for well in wells_by_plate[plate_id]
@@ -104,23 +123,23 @@ def inspect_missingness(case: InvestigatorCase) -> ScientificToolResult:
             ),
             (
                 "missingness.missing_measurement_count",
-                plate_summary.missing_measurement_count,
-                plate_summary.observed_well_count,
-                "Mapped wells without a measurement row.",
+                missing_measurement_count,
+                len(assay_wells),
+                "Mapped non-empty wells without a measurement row.",
                 True,
             ),
             (
                 "missingness.null_measurement_count",
-                plate_summary.null_measurement_count,
+                null_measurement_count,
                 measurement_row_count,
-                "Measurement rows containing a null signal.",
+                "Non-empty measurement rows containing a null signal.",
                 True,
             ),
             (
                 "missingness.nonfinite_measurement_count",
-                plate_summary.nonfinite_measurement_count,
+                nonfinite_measurement_count,
                 measurement_row_count,
-                "Measurement rows containing a non-finite signal.",
+                "Non-empty measurement rows containing a non-finite signal.",
                 True,
             ),
             (
@@ -183,21 +202,21 @@ def inspect_missingness(case: InvestigatorCase) -> ScientificToolResult:
                     missing_rows,
                     len(role_wells),
                     f"Mapped {role.value} wells without a measurement row.",
-                    True,
+                    role is not WellRole.EMPTY,
                 ),
                 (
                     "missingness.role_null_measurement_count",
                     null_values,
                     len(role_wells) - missing_rows,
                     f"{role.value} measurement rows containing a null signal.",
-                    True,
+                    role is not WellRole.EMPTY,
                 ),
                 (
                     "missingness.role_nonfinite_measurement_count",
                     nonfinite_values,
                     len(role_wells) - missing_rows,
                     f"{role.value} measurement rows containing a non-finite signal.",
-                    True,
+                    role is not WellRole.EMPTY,
                 ),
                 (
                     "missingness.role_missing_design_annotation_count",

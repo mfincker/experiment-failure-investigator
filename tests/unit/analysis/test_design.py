@@ -218,6 +218,9 @@ def test_full_384_well_geometry_is_inferred_from_coordinates() -> None:
     assert case.design.plates[0].plate_format is PlateFormat.WELLS_384
     assert case.design.plates[0].expected_well_count == 384
     assert case.design.plates[0].missing_wells == ()
+    assert case.design.plates[0].empty_well_count == 384
+    assert case.design.replicate_count_distribution == {}
+    assert not case.design.capabilities.has_replicates
 
 
 def test_complete_replicate_plates_enable_cross_plate_analysis() -> None:

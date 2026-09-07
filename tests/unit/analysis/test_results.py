@@ -10,6 +10,7 @@ from pydantic import JsonValue, ValidationError
 
 from experiment_failure_investigator.analysis.contracts import PublicArtifactHashes
 from experiment_failure_investigator.analysis.results import (
+    ArtifactAttachment,
     EvidenceRecord,
     EvidenceScope,
     ResultWarning,
@@ -240,6 +241,58 @@ def test_result_order_is_canonicalized() -> None:
 
     assert first == second
     assert canonical_json(first) == canonical_json(second)
+
+
+def test_artifact_attachments_are_canonical_and_not_numeric_evidence() -> None:
+    first = ArtifactAttachment(
+        name="raw_signal",
+        path="reports/raw.png",
+        sha256=VALID_HASH,
+        media_type="image/png",
+        description="Public-data plate heatmap.",
+    )
+    second = ArtifactAttachment(
+        name="condition_residual",
+        path="reports/residual.png",
+        sha256="1" * 64,
+        media_type="image/png",
+        description="Public-data residual heatmap.",
+    )
+    result = ScientificToolResult(
+        status=ToolStatus.SUCCESS,
+        tool_name="generate_plate_heatmap",
+        tool_version="1.0.0",
+        scope=_scope(),
+        attachments=(first, second),
+        provenance=PROVENANCE,
+    )
+
+    assert result.evidence == ()
+    assert tuple(item.name for item in result.attachments) == (
+        "condition_residual",
+        "raw_signal",
+    )
+
+
+def test_not_applicable_result_rejects_attachments() -> None:
+    with pytest.raises(ValidationError, match="evidence or attachments"):
+        ScientificToolResult(
+            status=ToolStatus.NOT_APPLICABLE,
+            status_reason="No plate is available.",
+            tool_name="generate_plate_heatmap",
+            tool_version="1.0.0",
+            scope=_scope(),
+            attachments=(
+                ArtifactAttachment(
+                    name="raw_signal",
+                    path="reports/raw.png",
+                    sha256=VALID_HASH,
+                    media_type="image/png",
+                    description="Unexpected artifact.",
+                ),
+            ),
+            provenance=PROVENANCE,
+        )
 
 
 def test_runtime_telemetry_does_not_change_scientific_output() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from struct import unpack
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -105,6 +106,29 @@ def test_plate_heatmap_has_fixed_orientation_and_shared_scale(
     assert encoding["y"]["sort"] == list("ABCDEFGH")
     assert encoding["color"]["scale"]["domain"] == list(domain)
     assert encoding["color"]["scale"]["scheme"] == "viridis"
+
+
+def test_empty_wells_are_gray_and_do_not_set_signal_or_residual_domains(
+    clean: CleanAssayResult,
+    metadata: PlotMetadata,
+) -> None:
+    plate_map = clean.plate_map.copy()
+    measurements = clean.measurements.copy()
+    empty_index = plate_map.index[0]
+    empty_well = plate_map.loc[empty_index, "well"]
+    plate_map.loc[empty_index, "well_role"] = "empty"
+    plate_map.loc[empty_index, ["treatment", "dose", "dose_unit", "replicate"]] = None
+    measurements.loc[measurements["well"] == empty_well, "raw_signal"] = 999.0
+    assay = SimpleNamespace(plate_map=plate_map, measurements=measurements)
+
+    domain = shared_signal_domain(assay)
+    spec = build_plate_heatmap(assay, metadata, signal_domain=domain).to_dict()
+    residual_domain = shared_residual_domain(assay)
+
+    assert domain[1] < 2
+    assert residual_domain[1] < 2
+    assert "#D1D5DB" in str(spec)
+    assert "empty" in str(spec["layer"][1]["encoding"]["text"])
 
 
 def test_residual_heatmap_uses_symmetric_diverging_scale(

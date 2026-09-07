@@ -106,6 +106,10 @@ class PlateDesignSummary(StrictModel):
     missing_measurement_count: int = Field(ge=0)
     null_measurement_count: int = Field(ge=0)
     nonfinite_measurement_count: int = Field(ge=0)
+    empty_well_count: int = Field(ge=0)
+    empty_missing_measurement_count: int = Field(ge=0)
+    empty_null_measurement_count: int = Field(ge=0)
+    empty_nonfinite_measurement_count: int = Field(ge=0)
     missing_design_annotation_count: int = Field(ge=0)
     role_counts: dict[WellRole, int]
 
@@ -154,6 +158,10 @@ class DesignSummary(StrictModel):
     total_missing_measurement_count: int = Field(ge=0)
     total_null_measurement_count: int = Field(ge=0)
     total_nonfinite_measurement_count: int = Field(ge=0)
+    total_empty_well_count: int = Field(ge=0)
+    total_empty_missing_measurement_count: int = Field(ge=0)
+    total_empty_null_measurement_count: int = Field(ge=0)
+    total_empty_nonfinite_measurement_count: int = Field(ge=0)
     capabilities: DesignCapabilities
     limitations: tuple[str, ...] = ()
 
