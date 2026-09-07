@@ -439,7 +439,9 @@ Clean and injected versions of a case use shared raw-signal and residual domains
 
 Condition centering is a diagnostic transformation, not a root-cause label. It can reveal spatial residual structure after accounting for the reported condition, but it does not prove a physical mechanism. It may also remove patterns that are inseparable from condition assignment, so layout-confounding cases must be reviewed with the raw heatmap and plate-map audit rather than the residual heatmap alone. For multi-plate cases, condition means are calculated across plates so a batch-specific response-scale change remains visible.
 
-Temporary pre-serialization review plots are written under ignored `artifacts/`. Final case plots will be written under `cases/<case_id>/plots/` after serialization is implemented.
+Temporary review plots are written under ignored `artifacts/`. Step 8 will combine
+the serializer and plot exporter so finalized plots are written under
+`cases/<case_id>/plots/`.
 
 ## Validation requirements
 
@@ -454,7 +456,30 @@ Before serialization, generation must reject:
 - Absolute artifact paths or paths escaping the case directory
 - Missing or malformed SHA-256 hashes in a finalized manifest
 
-Cross-row and cross-file validation will be implemented alongside serialization in Step 6. Step 2 defines the typed configuration and manifest boundaries that those validators will consume.
+## Serialization and integrity
+
+Case tables are sorted by `plate_id` and canonical `well` before writing. CSV
+files use fixed column order, `\n` line endings, empty fields for null values,
+and a stable significant-digit format for floating-point values. JSON files use
+sorted keys, two-space indentation, UTF-8, and a final newline. Protocol and
+problem-statement line endings are normalized and blank content is rejected.
+
+The writer validates all in-memory content before creating a staging directory,
+serializes the five investigator-visible inputs, computes their SHA-256 hashes,
+builds the evaluation-only manifest, and loads the staged case through the same
+hash and content validator used for existing cases. Only then is the staging
+directory atomically renamed to its final case ID. Existing case directories are
+rejected unless the caller explicitly opts into replacement with `force=True`.
+
+The manifest is deliberately excluded from its own file map. Artifact references
+must be unique relative paths within the case directory; missing files, hash
+mismatches, and symlinks that resolve outside the case directory are rejected.
+Public measurement and plate-map tables must contain exactly their documented
+columns, preventing private latent signals and injected-effect truth from leaking
+into investigator-visible inputs.
+
+Step 6 implements these cross-row and cross-file checks at both write and load
+time. Step 2 defines the typed configuration and manifest boundaries they consume.
 
 ## Anti-brittleness requirements
 

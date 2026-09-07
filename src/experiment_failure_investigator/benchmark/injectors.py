@@ -7,7 +7,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import Field, field_validator
+from pydantic import Field, JsonValue, TypeAdapter, field_validator
 
 from experiment_failure_investigator.benchmark.models import (
     FailureMode,
@@ -25,6 +25,7 @@ from experiment_failure_investigator.benchmark.signals import (
 
 INJECTION_NAMESPACE = "failure_injection"
 INJECTED_LATENT_SIGNAL_COLUMNS = [*LATENT_SIGNAL_COLUMNS, "injected_effect"]
+JSON_PARAMETERS_ADAPTER = TypeAdapter(dict[str, JsonValue])
 
 
 class DirectedMagnitude(StrictModel):
@@ -141,7 +142,7 @@ class InjectionRecord:
 
     mechanism: FailureMode
     child_seed: int
-    parameters: dict[str, object]
+    parameters: dict[str, JsonValue]
     affected_well_count: int
 
 
@@ -172,6 +173,13 @@ def _injection_seed(clean: CleanAssayResult) -> int:
     return derive_child_seed(clean.metadata.root_seed, INJECTION_NAMESPACE)
 
 
+def _json_parameters(parameters: StrictModel) -> dict[str, JsonValue]:
+    """Serialize and validate injector parameters as JSON-compatible values."""
+    return JSON_PARAMETERS_ADAPTER.validate_python(
+        parameters.model_dump(mode="json")
+    )
+
+
 def _apply_numeric_effect(
     clean: CleanAssayResult,
     effect: np.ndarray,
@@ -198,7 +206,7 @@ def _apply_numeric_effect(
         injection=InjectionRecord(
             mechanism=mechanism,
             child_seed=_injection_seed(clean),
-            parameters=parameters.model_dump(mode="json"),
+            parameters=_json_parameters(parameters),
             affected_well_count=int(np.count_nonzero(values)),
         ),
     )
@@ -427,7 +435,7 @@ def inject_layout_confounding(
         injection=InjectionRecord(
             mechanism=FailureMode.LAYOUT_CONFOUNDING,
             child_seed=_injection_seed(clean),
-            parameters=parameters.model_dump(mode="json"),
+            parameters=_json_parameters(parameters),
             affected_well_count=int(np.count_nonzero(changed)),
         ),
     )

@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from math import isfinite
 from pathlib import PurePosixPath
+from datetime import date
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -263,6 +264,44 @@ class CaseFiles(StrictModel):
     metadata: ArtifactReference
     protocol: ArtifactReference
     problem_statement: ArtifactReference
+
+
+class PlateMetadata(StrictModel):
+    """Investigator-visible provenance for one synthetic plate."""
+
+    plate_id: str = Field(min_length=1)
+    batch_id: str = Field(min_length=1)
+    operator_label: str | None = None
+    run_date: date | None = None
+    instrument_label: str | None = None
+
+    @field_validator("plate_id", "batch_id", "operator_label", "instrument_label")
+    @classmethod
+    def metadata_labels_must_not_be_whitespace(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("metadata labels must not be blank")
+        return value
+
+
+class CaseMetadata(StrictModel):
+    """Typed investigator-visible metadata serialized with a case."""
+
+    schema_version: Literal["1.0.0"] = SCHEMA_VERSION
+    case_id: CaseId
+    assay_type: AssayType
+    signal_direction: SignalDirection
+    plates: list[PlateMetadata] = Field(min_length=1)
+
+    @field_validator("plates")
+    @classmethod
+    def plate_ids_must_be_unique(
+        cls,
+        value: list[PlateMetadata],
+    ) -> list[PlateMetadata]:
+        plate_ids = [plate.plate_id for plate in value]
+        if len(plate_ids) != len(set(plate_ids)):
+            raise ValueError("metadata plate IDs must be unique")
+        return value
 
 
 class GroundTruth(StrictModel):

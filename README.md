@@ -27,10 +27,10 @@ Completed:
 - Deterministic clean assay generation with private latent-signal records
 - Seven typed, deterministic, non-mutating failure injectors
 - Altair heatmaps, dose-response views, and control-QC plots with local PNG export
+- Deterministic case serialization with validation, SHA-256 integrity checks, and atomic writes
 
 Next:
 
-- Add case serialization and validation
 - Calibrate obvious and noisy case parameters through visual review
 - Add deterministic QC tools before introducing model-driven decisions
 
