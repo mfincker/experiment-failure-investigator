@@ -79,6 +79,7 @@ class FailureMode(StrEnum):
 
     EDGE_EFFECT = "edge_effect"
     PIPETTING_DRIFT = "pipetting_drift"
+    TRANSIENT_TIP_CLOG = "transient_tip_clog"
     LAYOUT_CONFOUNDING = "layout_confounding"
     WEAK_CONTROLS = "weak_controls"
     BATCH_SHIFT = "batch_shift"
@@ -288,10 +289,11 @@ class GroundTruth(StrictModel):
     def validate_traversal(self) -> GroundTruth:
         if (
             self.simulated_traversal is not None
-            and self.mechanism is not FailureMode.PIPETTING_DRIFT
+            and self.mechanism
+            not in {FailureMode.PIPETTING_DRIFT, FailureMode.TRANSIENT_TIP_CLOG}
         ):
             raise ValueError(
-                "simulated traversal is only valid for pipetting-drift ground truth"
+                "simulated traversal is only valid for dispensing-related ground truth"
             )
         return self
 

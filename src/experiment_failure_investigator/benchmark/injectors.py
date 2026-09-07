@@ -40,13 +40,57 @@ class DirectedMagnitude(StrictModel):
 
 
 class EdgeEffectParameters(DirectedMagnitude):
-    """Parameters for shifting every perimeter well."""
+    """Parameters for shifting wells on one or more selected plate sides."""
+
+    sides: tuple[Literal["top", "bottom", "left", "right"], ...] = (
+        "top",
+        "bottom",
+        "left",
+        "right",
+    )
+
+    @field_validator("sides")
+    @classmethod
+    def sides_must_be_nonempty_and_unique(
+        cls,
+        value: tuple[Literal["top", "bottom", "left", "right"], ...],
+    ) -> tuple[Literal["top", "bottom", "left", "right"], ...]:
+        if not value:
+            raise ValueError("at least one edge side is required")
+        if len(value) != len(set(value)):
+            raise ValueError("edge sides must be unique")
+        return value
 
 
 class PipettingDriftParameters(DirectedMagnitude):
     """Parameters for a traversal-aligned peak-to-peak gradient."""
 
     traversal: SimulatedTraversal = SimulatedTraversal.ROW_MAJOR
+
+
+class TransientTipClogParameters(DirectedMagnitude):
+    """Parameters for a tip-channel fault that clears after several groups."""
+
+    direction: Literal["increase", "decrease"] = "decrease"
+    traversal: SimulatedTraversal = SimulatedTraversal.COLUMN_MAJOR
+    dispense_group_size: int = Field(default=8, ge=1)
+    affected_group_start: int = Field(ge=0)
+    affected_group_count: int = Field(ge=1)
+    affected_channels: tuple[int, ...] = (0,)
+
+    @field_validator("affected_channels")
+    @classmethod
+    def channels_must_be_nonempty_unique_and_nonnegative(
+        cls,
+        value: tuple[int, ...],
+    ) -> tuple[int, ...]:
+        if not value:
+            raise ValueError("at least one affected channel is required")
+        if len(value) != len(set(value)):
+            raise ValueError("affected channels must be unique")
+        if any(channel < 0 for channel in value):
+            raise ValueError("affected channels must be nonnegative")
+        return value
 
 
 class LayoutConfoundingParameters(StrictModel):
@@ -63,10 +107,18 @@ class WeakControlsParameters(StrictModel):
     collapse_fraction: float = Field(gt=0, le=1, allow_inf_nan=False)
 
 
-class BatchShiftParameters(DirectedMagnitude):
-    """Parameters for shifting one declared plate or batch."""
+class BatchShiftParameters(StrictModel):
+    """Parameters for scaling one plate's response around its control anchor."""
 
     shifted_plate_id: str = Field(min_length=1)
+    response_scale_factor: float = Field(gt=0, allow_inf_nan=False)
+
+    @field_validator("response_scale_factor")
+    @classmethod
+    def scale_factor_must_change_response(cls, value: float) -> float:
+        if value == 1:
+            raise ValueError("response scale factor must differ from 1")
+        return value
 
 
 class TrueNonResponseParameters(StrictModel):
@@ -156,17 +208,21 @@ def inject_edge_effect(
     clean: CleanAssayResult,
     parameters: EdgeEffectParameters,
 ) -> InjectedAssayResult:
-    """Shift perimeter wells by a configured signed magnitude."""
+    """Shift wells on the configured plate sides by a signed magnitude."""
     plate_map = clean.plate_map
     grouped = plate_map.groupby("plate_id", sort=False)
     edge = pd.Series(False, index=plate_map.index)
     for _, plate in grouped:
-        edge.loc[plate.index] = (
-            plate["row"].isin([plate["row"].min(), plate["row"].max()])
-            | plate["column"].isin(
-                [plate["column"].min(), plate["column"].max()]
-            )
-        )
+        selected = pd.Series(False, index=plate.index)
+        if "top" in parameters.sides:
+            selected |= plate["row"] == plate["row"].min()
+        if "bottom" in parameters.sides:
+            selected |= plate["row"] == plate["row"].max()
+        if "left" in parameters.sides:
+            selected |= plate["column"] == plate["column"].min()
+        if "right" in parameters.sides:
+            selected |= plate["column"] == plate["column"].max()
+        edge.loc[plate.index] = selected
     effect = np.where(edge.to_numpy(), parameters.signed_magnitude, 0.0)
     return _apply_numeric_effect(
         clean,
@@ -230,6 +286,59 @@ def inject_pipetting_drift(
         clean,
         effect,
         mechanism=FailureMode.PIPETTING_DRIFT,
+        parameters=parameters,
+    )
+
+
+def inject_transient_tip_clog(
+    clean: CleanAssayResult,
+    parameters: TransientTipClogParameters,
+) -> InjectedAssayResult:
+    """Affect selected tip channels temporarily across dispense groups."""
+    effect = np.zeros(len(clean.plate_map), dtype=float)
+    for _, plate in clean.plate_map.groupby("plate_id", sort=False):
+        row_labels = sorted(plate["row"].unique())
+        row_lookup = {row: index for index, row in enumerate(row_labels)}
+        row_index = plate["row"].map(row_lookup).to_numpy(dtype=int)
+        column_values = sorted(plate["column"].unique())
+        column_lookup = {
+            column: index for index, column in enumerate(column_values)
+        }
+        column_index = plate["column"].map(column_lookup).to_numpy(dtype=int)
+        rank = _traversal_rank(
+            row_index,
+            column_index,
+            len(row_labels),
+            len(column_values),
+            parameters.traversal,
+        )
+        if parameters.dispense_group_size > len(plate):
+            raise ValueError("dispense group size exceeds the plate well count")
+        if max(parameters.affected_channels) >= parameters.dispense_group_size:
+            raise ValueError("affected channel must be within the dispense group")
+        group_count = int(np.ceil(len(plate) / parameters.dispense_group_size))
+        group_stop = (
+            parameters.affected_group_start + parameters.affected_group_count
+        )
+        if group_stop > group_count:
+            raise ValueError("affected dispense groups exceed the traversal")
+
+        group_index = rank // parameters.dispense_group_size
+        channel_index = rank % parameters.dispense_group_size
+        affected = (
+            (group_index >= parameters.affected_group_start)
+            & (group_index < group_stop)
+            & np.isin(channel_index, parameters.affected_channels)
+        )
+        effect[plate.index] = np.where(
+            affected,
+            parameters.signed_magnitude,
+            0.0,
+        )
+    return _apply_numeric_effect(
+        clean,
+        effect,
+        mechanism=FailureMode.TRANSIENT_TIP_CLOG,
         parameters=parameters,
     )
 
@@ -351,14 +460,22 @@ def inject_batch_shift(
     clean: CleanAssayResult,
     parameters: BatchShiftParameters,
 ) -> InjectedAssayResult:
-    """Shift every measurement on one declared plate."""
+    """Scale one plate's response around its observed negative-control mean."""
     plate_ids = set(clean.plate_map["plate_id"])
     if len(plate_ids) < 2:
         raise ValueError("batch-shift injection requires at least two plates")
     if parameters.shifted_plate_id not in plate_ids:
         raise ValueError("shifted plate is not present in the clean assay")
     mask = clean.plate_map["plate_id"] == parameters.shifted_plate_id
-    effect = np.where(mask, parameters.signed_magnitude, 0.0)
+    negative_controls = mask & (
+        clean.plate_map["well_role"] == WellRole.NEGATIVE_CONTROL.value
+    )
+    if not negative_controls.any():
+        raise ValueError("shifted plate requires negative controls")
+    anchor = float(clean.measurements.loc[negative_controls, "raw_signal"].mean())
+    original = clean.measurements["raw_signal"].to_numpy(dtype=float)
+    transformed = anchor + parameters.response_scale_factor * (original - anchor)
+    effect = np.where(mask, transformed - original, 0.0)
     return _apply_numeric_effect(
         clean,
         effect,

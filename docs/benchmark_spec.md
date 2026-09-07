@@ -15,7 +15,7 @@ The benchmark is not a source of universal laboratory acceptance thresholds. Mea
 - Response direction: lower signal represents stronger inhibition
 - Initial scope: one planted mechanism per case
 - Initial case variants: `obvious` and `noisy`
-- Initial target: twelve cases, one variant per failure-mode and difficulty combination
+- Initial target: fourteen cases, one variant per failure-mode and difficulty combination
 
 Mixed-cause, clean-negative, and deliberately ambiguous cases are deferred until the initial cases pass deterministic and visual review.
 
@@ -108,7 +108,7 @@ The independent audit confirms:
 
 ### Current fixed-layout limitation
 
-The initial twelve-case benchmark slice is intentionally a fixed-layout development fixture. All cases other than the two `layout_confounding` cases reuse the frozen baseline map above; their case root seeds vary signal noise and failure injection, not well assignment. The `layout_confounding` cases are deliberate exceptions because their planted mechanism requires a different, confounded map.
+The initial fourteen-case benchmark slice is intentionally a fixed-layout development fixture. All cases other than the two `layout_confounding` cases reuse the frozen baseline map above; their case root seeds vary signal noise and failure injection, not well assignment. The `layout_confounding` cases are deliberate exceptions because their planted mechanism requires a different, confounded map.
 
 Results on this slice measure performance within the baseline layout. They do **not** demonstrate that an investigator generalizes to unseen well assignments, alternative control allocations, different replicate counts, missing reference treatments, or 384-well plates. Repeated well positions may become an unintended shortcut for prompts, tools, or models even when the layout is not described explicitly.
 
@@ -254,14 +254,16 @@ The initial magnitudes below are provisional benchmark calibration values. They 
 
 Mechanism:
 
-- Shift signals in boundary wells by a configured signed magnitude.
+- Shift signals on an explicitly selected set of one to four plate sides: top,
+  bottom, left, and/or right. Corners are affected once when either adjoining
+  selected side is affected.
 - Do not change well roles, treatments, or doses.
 - Initial increase: `0.25` for obvious cases and `0.12` for noisy cases.
 
 Expected observable evidence:
 
 - A residual difference between edge and interior wells after accounting for experimental condition.
-- A perimeter-shaped pattern in the plate heatmap.
+- A one-, two-, three-, or four-sided boundary pattern in the plate heatmap.
 
 Important alternatives:
 
@@ -290,7 +292,35 @@ Useful follow-up:
 - Request instrument or liquid-handler logs if they exist.
 - Repeat with a randomized or reversed layout that separates condition from the suspected gradient.
 
-### 3. Plate-layout confounding
+### 3. Transient tip clog
+
+Mechanism:
+
+- Simulate grouped dispensing with a private traversal and configurable group size.
+- Reduce signal from one or more selected tip channels for a contiguous span of
+  dispense groups, then return subsequent groups to baseline.
+- Initial obvious cases use an eight-channel column-wise traversal, one affected
+  channel, and several consecutive affected groups.
+
+Expected observable evidence:
+
+- A localized sequence of affected wells consistent with one channel across
+  several dispensing groups.
+- Recovery in later groups rather than a gradient spanning the entire plate.
+
+Interpretation limit:
+
+- Without liquid-handler logs, the investigator should describe the pattern as
+  consistent with a transient dispensing fault rather than prove a clogged tip.
+- Actual head geometry, grouping, reload behavior, and channel-to-well mapping
+  vary by protocol and remain private simulation assumptions in this MVP.
+
+Useful follow-up:
+
+- Inspect liquid-handler pressure/error logs and tip-change or reload events.
+- Repeat the affected conditions at randomized positions or with fresh tips.
+
+### 4. Plate-layout confounding
 
 Mechanism:
 
@@ -306,7 +336,7 @@ Correct behavior:
 
 - Report non-identifiability rather than claiming a spatial artifact as proven.
 
-### 4. Failed or weak controls
+### 5. Failed or weak controls
 
 Mechanism:
 
@@ -323,25 +353,36 @@ Important alternatives:
 - Excessive variability affecting all wells.
 - Incorrect control annotations.
 
-### 5. Batch shift
+### 6. Batch shift
 
 Mechanism:
 
 - Generate at least two otherwise comparable plates or batches.
-- Apply a configured shift to one batch and expose the batch label in metadata.
-- Initial signed shift magnitude: `0.30` for obvious cases and `0.15` for noisy cases.
+- Preserve each plate's observed negative-control mean as its response anchor.
+- Scale one plate's distance from that anchor and expose the plate or batch label
+  in metadata: `shifted = anchor + scale_factor × (original - anchor)`.
+- Initial response-scale factors: `0.70` for obvious cases and `0.85` for noisy
+  cases. These compress the assay window without moving the negative-control mean.
 
 Expected observable evidence:
 
-- A between-batch difference among like-for-like controls or treatment-dose conditions.
-- The shift persists after accounting for condition composition.
+- A between-batch difference among like-for-like positive controls or
+  treatment-dose conditions while negative controls remain anchored.
+- The response-scale change persists after accounting for condition composition.
 
 Important alternatives:
 
 - Different layouts or condition mixes between batches.
 - A batch-specific spatial artifact.
 
-### 6. True biological non-response
+Interpretation limit:
+
+- A purely multiplicative global change applied before negative-control
+  normalization would cancel and cannot be recovered from normalized values.
+- This benchmark case therefore represents a batch-specific change in assay
+  dynamic range, not a uniform additive displacement of normalized values.
+
+### 7. True biological non-response
 
 Mechanism:
 
@@ -372,6 +413,8 @@ edge_effect_obvious
 edge_effect_noisy
 pipetting_drift_obvious
 pipetting_drift_noisy
+transient_tip_clog_obvious
+transient_tip_clog_noisy
 layout_confounding_obvious
 layout_confounding_noisy
 weak_controls_obvious
@@ -381,6 +424,22 @@ batch_shift_noisy
 true_non_response_obvious
 true_non_response_noisy
 ```
+
+## Human-inspection charts
+
+Step 7 produces four Altair views directly from in-memory plate maps and measurements:
+
+- A raw-signal plate heatmap with fixed row and column orientation.
+- A condition-centered residual heatmap that subtracts the observed mean for each well-role or treatment-dose group.
+- A log-dose response chart with replicate points, condition means, standard-deviation intervals, and control reference bands.
+- A control-QC chart with individual control wells, means, and standard-deviation intervals by plate.
+- An eight-panel comparison grid with clean and injected rows and the four inspection views as columns.
+
+Clean and injected versions of a case use shared raw-signal and residual domains so apparent differences cannot be created by automatic rescaling. Chart titles record the case ID, scenario, variant, and root seed. Plot data is restricted to investigator-observable fields plus derived summaries; latent expectations, baseline-noise draws, injected effects, and private injection parameters are not included.
+
+Condition centering is a diagnostic transformation, not a root-cause label. It can reveal spatial residual structure after accounting for the reported condition, but it does not prove a physical mechanism. It may also remove patterns that are inseparable from condition assignment, so layout-confounding cases must be reviewed with the raw heatmap and plate-map audit rather than the residual heatmap alone. For multi-plate cases, condition means are calculated across plates so a batch-specific response-scale change remains visible.
+
+Temporary pre-serialization review plots are written under ignored `artifacts/`. Final case plots will be written under `cases/<case_id>/plots/` after serialization is implemented.
 
 ## Validation requirements
 

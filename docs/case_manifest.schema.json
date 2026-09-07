@@ -73,6 +73,7 @@
       "enum": [
         "edge_effect",
         "pipetting_drift",
+        "transient_tip_clog",
         "layout_confounding",
         "weak_controls",
         "batch_shift",

@@ -2,7 +2,7 @@
 
 ## Outcome
 
-At the end of Week 1, the repository will generate twelve reproducible, labeled 96-well synthetic assay cases: one obvious and one noisy case for each of the six MVP failure modes. Each case will contain validated tabular inputs, a machine-readable manifest, and inspection plots. No agent or model call is needed this week.
+At the end of Week 1, the repository will generate fourteen reproducible, labeled 96-well synthetic assay cases: one obvious and one noisy case for each of the seven MVP failure modes. Each case will contain validated tabular inputs, a machine-readable manifest, and inspection plots. No agent or model call is needed this week.
 
 This week intentionally builds the environment in which later agents will be evaluated. It does not implement Pydantic AI orchestration yet. That separation makes it possible to tell whether a later failure comes from the scientific benchmark, a deterministic tool, the workflow, or the model.
 
@@ -41,7 +41,10 @@ experiment-failure-investigator/
 │       ├── manifest.json
 │       └── plots/
 │           ├── plate_heatmap.png
-│           └── dose_response.png
+│           ├── residual_heatmap.png
+│           ├── dose_response.png
+│           ├── control_qc.png
+│           └── comparison_grid.png
 ├── src/experiment_failure_investigator/
 │   ├── benchmark/
 │   │   ├── __init__.py
@@ -107,6 +110,8 @@ Use a Pydantic model as the source of truth and emit its JSON Schema to `docs/ca
 ## Implementation sequence for Codex
 
 Each step ends with a reviewable checkpoint. Codex should implement one checkpoint at a time, run the named verification, summarize what changed, and wait for human review when a scientific assumption changes.
+
+Execution-order note: human inspection plots in Step 7 are implemented immediately after the failure injectors in Step 5. Step 6 serialization is not a dependency because the charts consume in-memory result tables. Stable case writing remains Step 6 conceptually and is implemented after the plots are approved.
 
 ### 1. Establish the Python project baseline
 
@@ -187,11 +192,13 @@ Verification:
 
 Checkpoint: generate one temporary clean plate and inspect its control summary and dose-response table. Heatmap and dose-response chart review occurs in Step 7 after the plotting functions exist.
 
-### 5. Implement six pure failure injectors
+### 5. Implement seven pure failure injectors
 
 Each injector accepts a clean generated plate plus typed parameters and returns a new plate plus an injection record. It must not mutate its input.
 
 1. `inject_edge_effect`
+   - Select any non-empty combination of the top, bottom, left, and right sides;
+     do not assume that every edge effect covers the full perimeter.
    - Shift boundary wells using a configurable magnitude and direction.
    - Expected evidence: edge-versus-interior difference and a perimeter pattern in the heatmap.
 
@@ -201,19 +208,29 @@ Each injector accepts a clean generated plate plus typed parameters and returns 
    - Interpretation limit: without observed run-order metadata, the investigator may call the pattern *consistent with* pipetting drift but cannot confirm dispensing order as the cause. Spatial gradients, timing effects, and layout confounding remain alternatives.
    - Useful follow-up: request instrument or liquid-handler logs if they exist, or repeat with a randomized/reversed layout that separates treatment position from the suspected gradient.
 
-3. `inject_layout_confounding`
+3. `inject_transient_tip_clog`
+   - Simulate one or more clogged tip channels across a contiguous span of private
+     dispense groups, followed by recovery after a reload or tip change.
+   - Scientist-facing evidence: a localized sequence aligned with plausible grouped
+     dispensing, without the full-plate gradient expected from progressive drift.
+   - Interpretation limit: without liquid-handler logs, report consistency with a
+     transient dispensing fault rather than a proven clogged tip.
+
+4. `inject_layout_confounding`
    - Create or select a deliberately confounded layout rather than merely changing values.
    - Expected evidence: treatment or dose becomes inseparable from position, so the appropriate conclusion may be non-identifiability rather than a spatial root cause.
 
-4. `inject_weak_controls`
+5. `inject_weak_controls`
    - Move positive-control response toward negative controls without altering treatment labels.
    - Expected evidence: reduced control separation and poor assay-quality statistic.
 
-5. `inject_batch_shift`
-   - Generate at least two plates or batches and shift one batch using an explicit metadata field.
-   - Expected evidence: between-batch difference after comparing like well roles or conditions.
+6. `inject_batch_shift`
+   - Generate at least two plates or batches and scale one plate's response around
+     its observed negative-control mean using an explicit metadata field.
+   - Expected evidence: anchored negative controls with a between-batch dynamic-range
+     difference among positive controls and like treatment-dose conditions.
 
-6. `inject_true_non_response`
+7. `inject_true_non_response`
    - Flatten the treatment dose-response while leaving assay controls healthy.
    - Expected evidence: acceptable QC with little or no treatment response across dose.
 
@@ -226,7 +243,7 @@ Verification for every injector:
 - The noisy parameterization remains present but is harder than the obvious case.
 - The injection record contains the mechanism and magnitude but no prose conclusion generated by a model.
 
-Checkpoint: review a numerical before/after summary for each injector. Complete the visual before/after review in Step 7 before generating the twelve-case set.
+Checkpoint: review a numerical before/after summary for each injector. Complete the visual before/after review in Step 7 before generating the fourteen-case set.
 
 ### 6. Add serialization, validation, and hashes
 
@@ -252,9 +269,12 @@ Checkpoint: one case round-trips through generate, save, load, and validate.
 Actions:
 
 - Create an Altair plate heatmap with fixed row/column orientation and a consistent color scale within each clean/failure comparison.
+- Create a condition-centered residual heatmap from observable plate-map groups so spatial patterns are not hidden by expected dose and treatment differences.
 - Create an Altair dose-response chart showing replicate points, condition summaries, and control reference bands.
+- Create an Altair control-QC chart showing individual control wells, means, and standard-deviation intervals by plate.
+- Create one comparison grid per case with clean and injected rows and the four inspection views as columns.
 - Put case ID, failure label, variant, and seed in plot metadata or title.
-- Build charts in pure functions that return `alt.Chart` objects, then export PNG files locally with `vl-convert-python`.
+- Build charts in pure functions that return Altair top-level chart objects, then export PNG files locally with `vl-convert-python`.
 - Use explicit dimensions, domains, sort orders, colors, and titles instead of relying on renderer defaults.
 
 Verification:
@@ -265,7 +285,7 @@ Verification:
 
 Checkpoint: approve one clean plot set and one failure plot set before batch generation.
 
-### 8. Generate and inspect the twelve cases
+### 8. Generate and inspect the fourteen cases
 
 Case IDs:
 
@@ -274,6 +294,8 @@ edge_effect_obvious
 edge_effect_noisy
 pipetting_drift_obvious
 pipetting_drift_noisy
+transient_tip_clog_obvious
+transient_tip_clog_noisy
 layout_confounding_obvious
 layout_confounding_noisy
 weak_controls_obvious
@@ -286,9 +308,9 @@ true_non_response_noisy
 
 Actions:
 
-- Implement general-purpose `generate-cases` and `validate-cases` CLI commands; Week 1 uses the initial twelve-case configuration registry.
+- Implement general-purpose `generate-cases` and `validate-cases` CLI commands; Week 1 uses the initial fourteen-case configuration registry.
 - Generate all cases from a version-controlled registry of typed configurations.
-- Record a canonical layout fingerprint for every case and confirm that the ten non-layout-confounding cases share the baseline fingerprint while the two layout-confounding cases differ by design.
+- Record a canonical layout fingerprint for every case and confirm that the twelve non-layout-confounding cases share the baseline fingerprint while the two layout-confounding cases differ by design.
 - Produce a compact index containing case ID, seed, failure mode, variant, paths, and validation status.
 - Inspect all plots in a grid or contact sheet, but retain the individual source plots.
 - Record review notes, including cases that are too obvious, too subtle, accidentally ambiguous, or susceptible to fixed-position shortcuts.
@@ -303,7 +325,7 @@ git diff --stat
 git diff -- docs/benchmark_spec.md
 ```
 
-Checkpoint: all twelve cases validate, their expected layout fingerprints are recorded, and the human reviewer agrees that each planted mechanism is visible in the raw inputs and baseline plots at the intended difficulty. This checkpoint establishes fixed-layout development behavior only.
+Checkpoint: all fourteen cases validate, their expected layout fingerprints are recorded, and the human reviewer agrees that each planted mechanism is visible in the raw inputs and baseline plots at the intended difficulty. This checkpoint establishes fixed-layout development behavior only.
 
 ### 9. Freeze the Week 1 benchmark slice
 
@@ -326,7 +348,7 @@ Verification:
 | Layer | What is tested | Model required |
 |---|---|---|
 | Unit | IDs, schemas, curve math, noise, injectors, validation, hashing | No |
-| Integration | Generate/save/load/validate one case and the twelve-case batch | No |
+| Integration | Generate/save/load/validate one case and the fourteen-case batch | No |
 | Property/invariant | Reproducibility, 96-well coverage, non-mutation, finite values | No |
 | Visual review | Layout, heatmaps, dose-response shape, planted pattern | No |
 | Prompt rehearsal | Not in Week 1 | No |
@@ -334,15 +356,15 @@ Verification:
 
 ## Week 1 exit checklist
 
-- [ ] Benchmark specification documents the clean model and all six mechanisms.
+- [ ] Benchmark specification documents the clean model and all seven mechanisms.
 - [ ] Observable inputs and hidden ground truth are clearly separated.
-- [ ] Twelve named cases are generated from committed configurations.
+- [ ] Fourteen named cases are generated from committed configurations.
 - [ ] Every case contains measurements, plate map, metadata, protocol, problem statement, manifest, and plots.
 - [ ] Seeds and serialized file hashes make the cases reproducible and tamper-evident.
 - [ ] Unit and integration tests pass without Ollama or network access.
 - [ ] Obvious cases clearly express one mechanism.
 - [ ] Noisy cases remain solvable without becoming mixed-cause cases.
-- [ ] A human has reviewed the raw tables and plots for all twelve cases.
+- [ ] A human has reviewed the raw tables and plots for all fourteen cases.
 - [ ] The README contains exact generate, validate, and test commands.
 
 ## Decisions deliberately deferred
@@ -352,7 +374,7 @@ Verification:
 - Skeptic-agent protocol and loop limits: Week 4.
 - LangGraph state and checkpoint format: Week 5.
 - Production-grade assay acceptance thresholds: outside the synthetic MVP unless supported by a cited public specification.
-- Mixed-cause cases, ambiguous cases, and clean negative cases: add after the twelve single-cause cases pass review.
+- Mixed-cause cases, ambiguous cases, and clean negative cases: add after the fourteen single-cause cases pass review.
 
 ## Learning review questions
 

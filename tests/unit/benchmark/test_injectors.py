@@ -12,12 +12,14 @@ from experiment_failure_investigator.benchmark.injectors import (
     EdgeEffectParameters,
     LayoutConfoundingParameters,
     PipettingDriftParameters,
+    TransientTipClogParameters,
     TrueNonResponseParameters,
     WeakControlsParameters,
     inject_batch_shift,
     inject_edge_effect,
     inject_layout_confounding,
     inject_pipetting_drift,
+    inject_transient_tip_clog,
     inject_true_non_response,
     inject_weak_controls,
 )
@@ -103,6 +105,36 @@ def test_edge_effect_changes_only_perimeter_wells(
     assert result.injection.mechanism is FailureMode.EDGE_EFFECT
 
 
+@pytest.mark.parametrize(
+    ("sides", "expected_count"),
+    [
+        (("top",), 12),
+        (("left", "right"), 16),
+        (("top", "bottom", "left"), 30),
+        (("top", "bottom", "left", "right"), 36),
+    ],
+)
+def test_edge_effect_supports_one_to_four_selected_sides(
+    clean: CleanAssayResult,
+    sides: tuple[str, ...],
+    expected_count: int,
+) -> None:
+    result = inject_edge_effect(
+        clean,
+        EdgeEffectParameters(magnitude=0.25, sides=sides),
+    )
+
+    assert result.injection.affected_well_count == expected_count
+    assert result.injection.parameters["sides"] == list(sides)
+
+
+def test_edge_effect_requires_at_least_one_unique_side() -> None:
+    with pytest.raises(ValueError, match="at least one edge side"):
+        EdgeEffectParameters(magnitude=0.25, sides=())
+    with pytest.raises(ValueError, match="edge sides must be unique"):
+        EdgeEffectParameters(magnitude=0.25, sides=("top", "top"))
+
+
 def test_pipetting_drift_follows_private_traversal(
     clean: CleanAssayResult,
 ) -> None:
@@ -122,6 +154,60 @@ def test_pipetting_drift_follows_private_traversal(
     assert effect.mean() == pytest.approx(0.0, abs=1e-12)
     assert np.corrcoef(row_major_rank, effect)[0, 1] == pytest.approx(1.0)
     assert result.injection.parameters["traversal"] == "row_major"
+
+
+def test_transient_tip_clog_affects_channels_for_a_limited_group_span(
+    clean: CleanAssayResult,
+) -> None:
+    result = inject_transient_tip_clog(
+        clean,
+        TransientTipClogParameters(
+            magnitude=0.25,
+            traversal=SimulatedTraversal.COLUMN_MAJOR,
+            dispense_group_size=8,
+            affected_group_start=2,
+            affected_group_count=3,
+            affected_channels=(1, 4),
+        ),
+    )
+    affected = result.latent_signals["injected_effect"].ne(0)
+
+    assert set(result.plate_map.loc[affected, "well"]) == {
+        "B03",
+        "E03",
+        "B04",
+        "E04",
+        "B05",
+        "E05",
+    }
+    assert (result.latent_signals.loc[affected, "injected_effect"] == -0.25).all()
+    assert result.injection.affected_well_count == 6
+    assert result.injection.mechanism is FailureMode.TRANSIENT_TIP_CLOG
+
+
+def test_transient_tip_clog_rejects_invalid_group_geometry(
+    clean: CleanAssayResult,
+) -> None:
+    with pytest.raises(ValueError, match="channel must be within"):
+        inject_transient_tip_clog(
+            clean,
+            TransientTipClogParameters(
+                magnitude=0.25,
+                dispense_group_size=8,
+                affected_group_start=0,
+                affected_group_count=1,
+                affected_channels=(8,),
+            ),
+        )
+    with pytest.raises(ValueError, match="groups exceed"):
+        inject_transient_tip_clog(
+            clean,
+            TransientTipClogParameters(
+                magnitude=0.25,
+                affected_group_start=11,
+                affected_group_count=2,
+            ),
+        )
 
 
 def test_layout_confounding_moves_assignments_with_their_signals(
@@ -208,17 +294,27 @@ def test_batch_shift_changes_only_selected_plate(
     result = inject_batch_shift(
         multi_plate_clean,
         BatchShiftParameters(
-            magnitude=0.3,
-            direction="decrease",
             shifted_plate_id="plate_02",
+            response_scale_factor=0.7,
         ),
     )
     effect = result.latent_signals["injected_effect"]
     shifted = result.plate_map["plate_id"] == "plate_02"
+    negative = shifted & (
+        result.plate_map["well_role"] == WellRole.NEGATIVE_CONTROL.value
+    )
+    original = multi_plate_clean.measurements["raw_signal"]
+    transformed = result.measurements["raw_signal"]
+    anchor = original[negative].mean()
 
-    assert (effect[shifted] == -0.3).all()
     assert (effect[~shifted] == 0.0).all()
     assert result.injection.affected_well_count == 96
+    assert transformed[negative].mean() == pytest.approx(anchor)
+    assert np.allclose(
+        transformed[shifted] - anchor,
+        0.7 * (original[shifted] - anchor),
+    )
+    assert result.injection.parameters["response_scale_factor"] == 0.7
 
 
 def test_true_non_response_flattens_only_target_treatment(
@@ -251,6 +347,14 @@ def test_true_non_response_flattens_only_target_treatment(
             PipettingDriftParameters(
                 magnitude=0.30,
                 traversal=SimulatedTraversal.SERPENTINE_ROWS,
+            ),
+        ),
+        (
+            inject_transient_tip_clog,
+            TransientTipClogParameters(
+                magnitude=0.25,
+                affected_group_start=2,
+                affected_group_count=3,
             ),
         ),
         (inject_layout_confounding, LayoutConfoundingParameters()),
@@ -295,8 +399,8 @@ def test_batch_shift_is_deterministic_and_pure(
     original_measurements = multi_plate_clean.measurements.copy(deep=True)
     original_latent = multi_plate_clean.latent_signals.copy(deep=True)
     parameters = BatchShiftParameters(
-        magnitude=0.3,
         shifted_plate_id="plate_02",
+        response_scale_factor=0.7,
     )
 
     first = inject_batch_shift(multi_plate_clean, parameters)
@@ -319,6 +423,11 @@ def test_injector_parameters_reject_invalid_values() -> None:
         EdgeEffectParameters(magnitude=0.0)
     with pytest.raises(ValidationError):
         WeakControlsParameters(collapse_fraction=1.1)
+    with pytest.raises(ValidationError, match="must differ from 1"):
+        BatchShiftParameters(
+            shifted_plate_id="plate_02",
+            response_scale_factor=1.0,
+        )
     with pytest.raises(ValidationError):
         TrueNonResponseParameters(
             target_treatment=" ",
@@ -332,7 +441,10 @@ def test_batch_shift_and_non_response_require_valid_targets(
     with pytest.raises(ValueError, match="at least two plates"):
         inject_batch_shift(
             clean,
-            BatchShiftParameters(magnitude=0.2, shifted_plate_id="plate_01"),
+            BatchShiftParameters(
+                shifted_plate_id="plate_01",
+                response_scale_factor=0.8,
+            ),
         )
     with pytest.raises(ValueError, match="not present"):
         inject_true_non_response(

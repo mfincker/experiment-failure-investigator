@@ -30,7 +30,7 @@ Use layout fingerprints to keep evaluation layouts separate from layouts used to
 
 ### Add realistic design variants
 
-**When:** after the initial twelve cases and their failure injectors are reliable.
+**When:** after the initial fourteen cases and their failure injectors are reliable.
 
 Add benchmark cases with varied control allocations, dose series, treatment counts, replicate counts, missing wells, empty wells, and no reference treatment. Keep analysis code driven by observed case data rather than MVP defaults.
 
@@ -46,7 +46,7 @@ Add an `assay_blank` role that is distinct from a physically empty well. Its exp
 
 ### Add unexpected content in empty wells
 
-**When:** after the initial six single-cause injectors and twelve-case slice are reliable.
+**When:** after the initial seven single-cause injectors and fourteen-case slice are reliable.
 
 Add a failure family in which the reported plate map marks positions as empty but their readouts are inconsistent with empty positions. Treat accidental dispensing, contamination or carryover, plate-map annotation error, optical crosstalk, and instrument behavior as competing explanations unless the case provides discriminating evidence. Avoid attributing the discrepancy to user error without such evidence.
 

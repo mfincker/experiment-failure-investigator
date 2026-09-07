@@ -25,26 +25,28 @@ Completed:
 - Reproducible case-manifest JSON Schema
 - Geometry-aware balanced plate-layout generation and independent audits
 - Deterministic clean assay generation with private latent-signal records
-- Six typed, deterministic, non-mutating failure injectors
+- Seven typed, deterministic, non-mutating failure injectors
+- Altair heatmaps, dose-response views, and control-QC plots with local PNG export
 
 Next:
 
 - Add case serialization and validation
-- Implement deterministic detectability checks and Altair inspection plots
+- Calibrate obvious and noisy case parameters through visual review
 - Add deterministic QC tools before introducing model-driven decisions
 
 The current CLI exposes only project help and version information. Benchmark and investigation subcommands will be added incrementally.
 
 ## Scientific scope
 
-The MVP uses synthetic 96-well cell-viability or dose-response assays with six planted scenarios:
+The MVP uses synthetic 96-well cell-viability or dose-response assays with seven planted scenarios:
 
 1. Edge effect
 2. Pipetting drift or a similar row/column gradient
-3. Plate-layout confounding
-4. Failed or weak controls
-5. Batch shift
-6. True biological non-response with otherwise acceptable QC
+3. Transient tip clog affecting a limited run of dispense groups
+4. Plate-layout confounding
+5. Failed or weak controls
+6. Batch response-scale change
+7. True biological non-response with otherwise acceptable QC
 
 Initial cases will contain one planted cause. Mixed-cause and deliberately ambiguous cases will be added after the single-cause benchmark is reliable.
 

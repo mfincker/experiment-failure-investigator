@@ -25,3 +25,6 @@ htmlcov/
 
 # Operating-system files
 .DS_Store
+
+# Temporary human-review plots generated before case serialization
+/artifacts/

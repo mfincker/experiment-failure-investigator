@@ -367,7 +367,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 
 **Goals**
 
-- Freeze the MVP assay type and six failure mechanisms.
+- Freeze the MVP assay type and seven failure mechanisms.
 - Specify the input formats and expected outputs.
 - Build the first version of the synthetic-data generator.
 
@@ -375,7 +375,7 @@ This schedule assumes approximately 6–8 focused hours per week. It can be comp
 
 - Define a simple 96-well dose-response design.
 - Implement clean-data generation.
-- Implement the six failure injectors.
+- Implement the seven failure injectors.
 - Create deterministic labels and case manifests.
 - Manually inspect one example of each failure type.
 
@@ -685,7 +685,7 @@ Pursue these only after the benchmark and evaluation harness are stable:
 
 ## Recommended first task
 
-Execute [`week_1_implementation_plan.md`](week_1_implementation_plan.md) before writing agent code. Define the clean plate model, implement the six failure injectors, test reproducibility and invariants, and document the evidence that should discriminate each failure. The quality of those cases will determine whether the eventual agent can be evaluated scientifically rather than demonstrated anecdotally.
+Execute [`week_1_implementation_plan.md`](week_1_implementation_plan.md) before writing agent code. Define the clean plate model, implement the seven failure injectors, test reproducibility and invariants, and document the evidence that should discriminate each failure. The quality of those cases will determine whether the eventual agent can be evaluated scientifically rather than demonstrated anecdotally.
 
 ## Primary implementation references
 
