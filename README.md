@@ -13,7 +13,8 @@ The project is intentionally split between scientific computation and language-m
 
 ## Project status
 
-The Week 1 synthetic benchmark foundation is complete and visually approved.
+The Week 1 synthetic benchmark and Week 2 deterministic investigation layer are
+complete.
 
 Completed:
 
@@ -30,12 +31,20 @@ Completed:
 - Deterministic case serialization with validation, SHA-256 integrity checks, and atomic writes
 - A version-controlled fourteen-case registry with layout fingerprints and hashed plots
 - Offline `generate-cases` and `validate-cases` CLI workflows
+- Investigator-safe loading that discards evaluation-only manifest content
+- Typed evidence, warning, provenance, status, and report contracts
+- Deterministic missingness, control, replicate, dose-response, spatial, and
+  multi-plate diagnostics
+- Investigator-facing Altair heatmaps, control distributions, and dose-response
+  plots
+- Evidence-linked JSON and Markdown reports with label-free scientific content
+- Offline single-case and fourteen-case batch QC CLI workflows
+- Frozen JSON Schemas and a reproducible golden Markdown report
 
 Next:
 
-- Execute the detailed [Week 2 implementation plan](docs/week_2_implementation_plan.md)
-  to add deterministic QC tools and evidence-linked baseline reports before
-  introducing model-driven decisions.
+- Review the deterministic fourteen-case baseline, then plan Week 3 model-driven
+  hypothesis generation without changing the frozen scientific contracts.
 
 The CLI can generate and validate the Week 1 benchmark without Ollama, network access, or a model API.
 
@@ -104,6 +113,37 @@ only after reviewing the existing generated diff. Validate an existing benchmark
 uv run experiment-failure-investigator validate-cases cases
 ```
 
+Run deterministic QC for one case. Without `--output`, the report is written
+under `reports/<opaque-case-id>`:
+
+```bash
+uv run experiment-failure-investigator qc cases/weak_controls_obvious
+```
+
+Choose an explicit report directory or process all benchmark cases:
+
+```bash
+uv run experiment-failure-investigator qc cases/weak_controls_obvious \
+  --output reports/weak-controls-review
+uv run experiment-failure-investigator qc-batch cases --output reports/baseline
+```
+
+Both commands refuse to write into a non-empty output directory unless
+`--force` is provided. Each single-case directory contains canonical
+`report.json`, a concise `report.md`, and four diagnostic plots. Batch execution
+also writes `batch_summary.json` and `batch_summary.md` with report paths, tool
+statuses, warning counts, and evidence counts.
+
+### Trace a finding to evidence
+
+In the frozen weak-controls example, the Markdown finding “Limited control
+separation” cites evidence `ev_214e6670e3728b9ba554`. The JSON report's
+`evidence_index` resolves that identifier to the `controls.z_prime` metric, its
+value and unit, analyzed scope, sample count, and plain-language description.
+The same evidence record also appears in the originating `summarize_controls`
+tool result. This lets a reader verify the numeric basis of the finding without
+asking a language model to reproduce the calculation.
+
 The generated [case index](cases/index.json) records case IDs, modes, variants,
 seeds, paths, validation state, and layout fingerprints. Open the local
 [review grid](cases/review.html) to inspect every clean/injected comparison.
@@ -130,6 +170,26 @@ uv run pytest tests/test_cli.py::test_help_is_available
 ```
 
 The deterministic test suite must remain runnable without Ollama, network access, or a remote model API key.
+
+## Current deterministic limitations
+
+- Heuristic thresholds are calibrated for the synthetic benchmark, not universal
+  laboratory acceptance criteria.
+- The development cases mostly share one balanced 96-well layout; they do not
+  demonstrate generalization to novel layouts or 384-well plates.
+- Multi-plate comparisons currently require complete design-replicate plates.
+  Biological condition replicates split across incomplete plates fail closed.
+- Spatial associations can locate gradients, edge differences, and local runs,
+  but cannot establish their physical cause or reconstruct unavailable dispense
+  order.
+- Dose-response fits are descriptive and cannot validate treatment identity,
+  preparation, concentration annotations, or biological mechanism.
+- Physically empty wells are excluded from signal diagnostics; unexpected signal
+  in a mapped-empty well is deferred as its own plate-map consistency problem.
+- Missingness and control diagnostics identify observable data-quality symptoms,
+  not why they occurred.
+- The benchmark contains one planted cause per case. Mixed-cause and deliberately
+  ambiguous evaluation cases remain future work.
 
 ## Planned workflow
 

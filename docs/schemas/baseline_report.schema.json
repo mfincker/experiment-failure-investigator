@@ -1,0 +1,625 @@
+{
+  "$defs": {
+    "ArtifactAttachment": {
+      "additionalProperties": false,
+      "description": "A non-numeric file artifact produced by a scientific tool.",
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "media_type": {
+          "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$",
+          "title": "Media Type",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "sha256",
+        "media_type",
+        "description"
+      ],
+      "title": "ArtifactAttachment",
+      "type": "object"
+    },
+    "BaselineFinding": {
+      "additionalProperties": false,
+      "description": "Neutral interpretation whose claims are linked to numeric evidence.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/FindingCategory"
+        },
+        "evidence_ids": {
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "finding_id": {
+          "pattern": "^fd_[0-9a-f]{20}$",
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/FindingSeverity",
+          "default": "review"
+        },
+        "summary": {
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "finding_id",
+        "category",
+        "title",
+        "summary",
+        "evidence_ids"
+      ],
+      "title": "BaselineFinding",
+      "type": "object"
+    },
+    "DesignCapabilities": {
+      "additionalProperties": false,
+      "description": "Facts about analyses supported by the observed design.",
+      "properties": {
+        "has_dose_series": {
+          "title": "Has Dose Series",
+          "type": "boolean"
+        },
+        "has_multiple_plates": {
+          "title": "Has Multiple Plates",
+          "type": "boolean"
+        },
+        "has_negative_controls": {
+          "title": "Has Negative Controls",
+          "type": "boolean"
+        },
+        "has_positive_controls": {
+          "title": "Has Positive Controls",
+          "type": "boolean"
+        },
+        "has_replicates": {
+          "title": "Has Replicates",
+          "type": "boolean"
+        },
+        "plates_are_complete_design_replicates": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Plates Are Complete Design Replicates"
+        },
+        "supports_cross_plate_analysis": {
+          "title": "Supports Cross Plate Analysis",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "has_negative_controls",
+        "has_positive_controls",
+        "has_replicates",
+        "has_dose_series",
+        "has_multiple_plates",
+        "plates_are_complete_design_replicates",
+        "supports_cross_plate_analysis"
+      ],
+      "title": "DesignCapabilities",
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "description": "One traceable numeric or structured scientific observation.",
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_id": {
+          "pattern": "^ev_[0-9a-f]{20}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "metric_name": {
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "sample_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Count"
+        },
+        "scope": {
+          "$ref": "#/$defs/EvidenceScope"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "metric_name",
+        "value",
+        "scope",
+        "description"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "EvidenceScope": {
+      "additionalProperties": false,
+      "description": "Canonical public-data scope for one scientific measurement.",
+      "properties": {
+        "case_id": {
+          "pattern": "^case_[0-9a-f]{16}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "dimensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Dimensions",
+          "type": "object"
+        },
+        "dose_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose Unit"
+        },
+        "doses": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Doses",
+          "type": "array"
+        },
+        "plate_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Plate Ids",
+          "type": "array"
+        },
+        "treatments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatments",
+          "type": "array"
+        },
+        "well_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Well Ids",
+          "type": "array"
+        },
+        "well_roles": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WellRole"
+          },
+          "title": "Well Roles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id"
+      ],
+      "title": "EvidenceScope",
+      "type": "object"
+    },
+    "FindingCategory": {
+      "description": "Stable diagnostic families used by the synthetic baseline.",
+      "enum": [
+        "data_completeness",
+        "control_separation",
+        "layout_identifiability",
+        "edge_association",
+        "position_trend",
+        "localized_pattern",
+        "plate_response",
+        "treatment_response"
+      ],
+      "title": "FindingCategory",
+      "type": "string"
+    },
+    "FindingSeverity": {
+      "description": "Kept as constants so report JSON remains simple and stable.",
+      "enum": [
+        "review"
+      ],
+      "title": "FindingSeverity",
+      "type": "string"
+    },
+    "HeuristicConfiguration": {
+      "additionalProperties": false,
+      "description": "Versioned thresholds used only for the frozen synthetic benchmark.",
+      "properties": {
+        "edge_standardized_difference_minimum": {
+          "default": 0.75,
+          "exclusiveMinimum": 0,
+          "title": "Edge Standardized Difference Minimum",
+          "type": "number"
+        },
+        "localized_run_minimum": {
+          "default": 2,
+          "minimum": 1,
+          "title": "Localized Run Minimum",
+          "type": "integer"
+        },
+        "plate_ratio_lower": {
+          "default": 0.85,
+          "exclusiveMinimum": 0,
+          "title": "Plate Ratio Lower",
+          "type": "number"
+        },
+        "plate_ratio_upper": {
+          "default": 1.15,
+          "exclusiveMinimum": 0,
+          "title": "Plate Ratio Upper",
+          "type": "number"
+        },
+        "position_correlation_minimum": {
+          "default": 0.45,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Position Correlation Minimum",
+          "type": "number"
+        },
+        "relative_treatment_range_maximum": {
+          "default": 0.5,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Relative Treatment Range Maximum",
+          "type": "number"
+        },
+        "version": {
+          "default": "1.0.0",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "weak_control_z_prime_maximum": {
+          "default": 0.0,
+          "title": "Weak Control Z Prime Maximum",
+          "type": "number"
+        }
+      },
+      "title": "HeuristicConfiguration",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PublicArtifactHashes": {
+      "additionalProperties": false,
+      "description": "Verified hashes for the five investigator-visible case artifacts.",
+      "properties": {
+        "measurements": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Measurements",
+          "type": "string"
+        },
+        "metadata": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Metadata",
+          "type": "string"
+        },
+        "plate_map": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plate Map",
+          "type": "string"
+        },
+        "problem_statement": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Problem Statement",
+          "type": "string"
+        },
+        "protocol": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Protocol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measurements",
+        "plate_map",
+        "metadata",
+        "protocol",
+        "problem_statement"
+      ],
+      "title": "PublicArtifactHashes",
+      "type": "object"
+    },
+    "ResultWarning": {
+      "additionalProperties": false,
+      "description": "Structured caution associated with a scientific result.",
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ResultWarning",
+      "type": "object"
+    },
+    "ScientificProvenance": {
+      "additionalProperties": false,
+      "description": "Stable public-input provenance for a deterministic result.",
+      "properties": {
+        "case_id": {
+          "pattern": "^case_[0-9a-f]{16}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "public_artifact_hashes": {
+          "$ref": "#/$defs/PublicArtifactHashes"
+        }
+      },
+      "required": [
+        "case_id",
+        "public_artifact_hashes"
+      ],
+      "title": "ScientificProvenance",
+      "type": "object"
+    },
+    "ScientificToolResult": {
+      "additionalProperties": false,
+      "description": "Deterministic scientific output, excluding execution telemetry.",
+      "properties": {
+        "attachments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ArtifactAttachment"
+          },
+          "title": "Attachments",
+          "type": "array"
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceRecord"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Parameters",
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/ScientificProvenance"
+        },
+        "scope": {
+          "$ref": "#/$defs/EvidenceScope"
+        },
+        "status": {
+          "$ref": "#/$defs/ToolStatus"
+        },
+        "status_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status Reason"
+        },
+        "tool_name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Tool Name",
+          "type": "string"
+        },
+        "tool_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Tool Version",
+          "type": "string"
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResultWarning"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "tool_name",
+        "tool_version",
+        "scope",
+        "provenance"
+      ],
+      "title": "ScientificToolResult",
+      "type": "object"
+    },
+    "ToolStatus": {
+      "description": "Scientific outcome of one deterministic tool invocation.",
+      "enum": [
+        "success",
+        "not_applicable",
+        "insufficient_data",
+        "error"
+      ],
+      "title": "ToolStatus",
+      "type": "string"
+    },
+    "WellRole": {
+      "description": "Allowed roles for wells in an investigator-visible plate map.",
+      "enum": [
+        "negative_control",
+        "positive_control",
+        "treatment",
+        "empty"
+      ],
+      "title": "WellRole",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Ground-truth-free deterministic QC report.",
+  "properties": {
+    "capabilities": {
+      "$ref": "#/$defs/DesignCapabilities"
+    },
+    "case_id": {
+      "pattern": "^case_[0-9a-f]{16}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "evidence_index": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Evidence Index",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/BaselineFinding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "heuristic_configuration": {
+      "$ref": "#/$defs/HeuristicConfiguration"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "report_version": {
+      "default": "1.0.0",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Report Version",
+      "type": "string"
+    },
+    "suggested_followups": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Suggested Followups",
+      "type": "array"
+    },
+    "tool_results": {
+      "items": {
+        "$ref": "#/$defs/ScientificToolResult"
+      },
+      "title": "Tool Results",
+      "type": "array"
+    }
+  },
+  "required": [
+    "heuristic_configuration",
+    "case_id",
+    "capabilities",
+    "tool_results",
+    "findings",
+    "evidence_index",
+    "limitations",
+    "suggested_followups"
+  ],
+  "title": "BaselineReport",
+  "type": "object"
+}

@@ -1,0 +1,748 @@
+{
+  "$defs": {
+    "AssayType": {
+      "description": "Assay designs supported by the initial benchmark.",
+      "enum": [
+        "cell_viability_endpoint"
+      ],
+      "title": "AssayType",
+      "type": "string"
+    },
+    "ConditionCoverage": {
+      "additionalProperties": false,
+      "description": "Observed replicate counts for one condition on every plate.",
+      "properties": {
+        "counts_by_plate": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Counts By Plate",
+          "type": "object"
+        },
+        "dose": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose"
+        },
+        "dose_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose Unit"
+        },
+        "treatment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Treatment"
+        },
+        "well_role": {
+          "$ref": "#/$defs/WellRole"
+        }
+      },
+      "required": [
+        "well_role",
+        "counts_by_plate"
+      ],
+      "title": "ConditionCoverage",
+      "type": "object"
+    },
+    "DesignCapabilities": {
+      "additionalProperties": false,
+      "description": "Facts about analyses supported by the observed design.",
+      "properties": {
+        "has_dose_series": {
+          "title": "Has Dose Series",
+          "type": "boolean"
+        },
+        "has_multiple_plates": {
+          "title": "Has Multiple Plates",
+          "type": "boolean"
+        },
+        "has_negative_controls": {
+          "title": "Has Negative Controls",
+          "type": "boolean"
+        },
+        "has_positive_controls": {
+          "title": "Has Positive Controls",
+          "type": "boolean"
+        },
+        "has_replicates": {
+          "title": "Has Replicates",
+          "type": "boolean"
+        },
+        "plates_are_complete_design_replicates": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Plates Are Complete Design Replicates"
+        },
+        "supports_cross_plate_analysis": {
+          "title": "Supports Cross Plate Analysis",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "has_negative_controls",
+        "has_positive_controls",
+        "has_replicates",
+        "has_dose_series",
+        "has_multiple_plates",
+        "plates_are_complete_design_replicates",
+        "supports_cross_plate_analysis"
+      ],
+      "title": "DesignCapabilities",
+      "type": "object"
+    },
+    "DesignSummary": {
+      "additionalProperties": false,
+      "description": "Canonical summary derived only from investigator-visible inputs.",
+      "properties": {
+        "available_well_roles": {
+          "items": {
+            "$ref": "#/$defs/WellRole"
+          },
+          "title": "Available Well Roles",
+          "type": "array"
+        },
+        "capabilities": {
+          "$ref": "#/$defs/DesignCapabilities"
+        },
+        "condition_coverage": {
+          "items": {
+            "$ref": "#/$defs/ConditionCoverage"
+          },
+          "title": "Condition Coverage",
+          "type": "array"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "plate_count": {
+          "minimum": 1,
+          "title": "Plate Count",
+          "type": "integer"
+        },
+        "plates": {
+          "items": {
+            "$ref": "#/$defs/PlateDesignSummary"
+          },
+          "title": "Plates",
+          "type": "array"
+        },
+        "replicate_count_distribution": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Replicate Count Distribution",
+          "type": "object"
+        },
+        "total_empty_missing_measurement_count": {
+          "minimum": 0,
+          "title": "Total Empty Missing Measurement Count",
+          "type": "integer"
+        },
+        "total_empty_nonfinite_measurement_count": {
+          "minimum": 0,
+          "title": "Total Empty Nonfinite Measurement Count",
+          "type": "integer"
+        },
+        "total_empty_null_measurement_count": {
+          "minimum": 0,
+          "title": "Total Empty Null Measurement Count",
+          "type": "integer"
+        },
+        "total_empty_well_count": {
+          "minimum": 0,
+          "title": "Total Empty Well Count",
+          "type": "integer"
+        },
+        "total_missing_measurement_count": {
+          "minimum": 0,
+          "title": "Total Missing Measurement Count",
+          "type": "integer"
+        },
+        "total_missing_well_count": {
+          "minimum": 0,
+          "title": "Total Missing Well Count",
+          "type": "integer"
+        },
+        "total_nonfinite_measurement_count": {
+          "minimum": 0,
+          "title": "Total Nonfinite Measurement Count",
+          "type": "integer"
+        },
+        "total_null_measurement_count": {
+          "minimum": 0,
+          "title": "Total Null Measurement Count",
+          "type": "integer"
+        },
+        "treatment_dose_series": {
+          "items": {
+            "$ref": "#/$defs/TreatmentDoseSeries"
+          },
+          "title": "Treatment Dose Series",
+          "type": "array"
+        },
+        "treatments": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "plate_count",
+        "plates",
+        "available_well_roles",
+        "treatments",
+        "treatment_dose_series",
+        "condition_coverage",
+        "replicate_count_distribution",
+        "total_missing_well_count",
+        "total_missing_measurement_count",
+        "total_null_measurement_count",
+        "total_nonfinite_measurement_count",
+        "total_empty_well_count",
+        "total_empty_missing_measurement_count",
+        "total_empty_null_measurement_count",
+        "total_empty_nonfinite_measurement_count",
+        "capabilities"
+      ],
+      "title": "DesignSummary",
+      "type": "object"
+    },
+    "InvestigatorMeasurement": {
+      "additionalProperties": false,
+      "description": "One public assay measurement with benchmark labels removed.",
+      "properties": {
+        "measurement_status": {
+          "$ref": "#/$defs/MeasurementStatus"
+        },
+        "plate_id": {
+          "minLength": 1,
+          "title": "Plate Id",
+          "type": "string"
+        },
+        "raw_signal": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Signal"
+        },
+        "well": {
+          "pattern": "^[A-Z][0-9]{2}$",
+          "title": "Well",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plate_id",
+        "well",
+        "measurement_status"
+      ],
+      "title": "InvestigatorMeasurement",
+      "type": "object"
+    },
+    "InvestigatorMetadata": {
+      "additionalProperties": false,
+      "description": "Metadata safe to expose to deterministic tools and future agents.",
+      "properties": {
+        "assay_type": {
+          "$ref": "#/$defs/AssayType"
+        },
+        "plates": {
+          "items": {
+            "$ref": "#/$defs/InvestigatorPlateMetadata"
+          },
+          "minItems": 1,
+          "title": "Plates",
+          "type": "array"
+        },
+        "signal_direction": {
+          "$ref": "#/$defs/SignalDirection"
+        }
+      },
+      "required": [
+        "assay_type",
+        "signal_direction",
+        "plates"
+      ],
+      "title": "InvestigatorMetadata",
+      "type": "object"
+    },
+    "InvestigatorPlateMapWell": {
+      "additionalProperties": false,
+      "description": "One investigator-visible well assignment.",
+      "properties": {
+        "column": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Column",
+          "type": "integer"
+        },
+        "dose": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose"
+        },
+        "dose_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose Unit"
+        },
+        "plate_id": {
+          "minLength": 1,
+          "title": "Plate Id",
+          "type": "string"
+        },
+        "replicate": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Replicate"
+        },
+        "row": {
+          "pattern": "^[A-Z]$",
+          "title": "Row",
+          "type": "string"
+        },
+        "sample_id": {
+          "minLength": 1,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "treatment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Treatment"
+        },
+        "well": {
+          "pattern": "^[A-Z][0-9]{2}$",
+          "title": "Well",
+          "type": "string"
+        },
+        "well_role": {
+          "$ref": "#/$defs/WellRole"
+        }
+      },
+      "required": [
+        "plate_id",
+        "well",
+        "row",
+        "column",
+        "sample_id",
+        "well_role"
+      ],
+      "title": "InvestigatorPlateMapWell",
+      "type": "object"
+    },
+    "InvestigatorPlateMetadata": {
+      "additionalProperties": false,
+      "description": "Public plate provenance without benchmark-specific case metadata.",
+      "properties": {
+        "batch_id": {
+          "minLength": 1,
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "instrument_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instrument Label"
+        },
+        "operator_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operator Label"
+        },
+        "plate_id": {
+          "minLength": 1,
+          "title": "Plate Id",
+          "type": "string"
+        },
+        "run_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Date"
+        }
+      },
+      "required": [
+        "plate_id",
+        "batch_id"
+      ],
+      "title": "InvestigatorPlateMetadata",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "description": "Validity of a source measurement after public-input parsing.",
+      "enum": [
+        "observed",
+        "null",
+        "nonfinite"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "PlateDesignSummary": {
+      "additionalProperties": false,
+      "description": "Geometry and completeness derived for one observed plate.",
+      "properties": {
+        "empty_missing_measurement_count": {
+          "minimum": 0,
+          "title": "Empty Missing Measurement Count",
+          "type": "integer"
+        },
+        "empty_nonfinite_measurement_count": {
+          "minimum": 0,
+          "title": "Empty Nonfinite Measurement Count",
+          "type": "integer"
+        },
+        "empty_null_measurement_count": {
+          "minimum": 0,
+          "title": "Empty Null Measurement Count",
+          "type": "integer"
+        },
+        "empty_well_count": {
+          "minimum": 0,
+          "title": "Empty Well Count",
+          "type": "integer"
+        },
+        "expected_well_count": {
+          "minimum": 1,
+          "title": "Expected Well Count",
+          "type": "integer"
+        },
+        "geometry_inference_warning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Geometry Inference Warning"
+        },
+        "geometry_source": {
+          "const": "inferred",
+          "default": "inferred",
+          "title": "Geometry Source",
+          "type": "string"
+        },
+        "missing_design_annotation_count": {
+          "minimum": 0,
+          "title": "Missing Design Annotation Count",
+          "type": "integer"
+        },
+        "missing_measurement_count": {
+          "minimum": 0,
+          "title": "Missing Measurement Count",
+          "type": "integer"
+        },
+        "missing_wells": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Wells",
+          "type": "array"
+        },
+        "nonfinite_measurement_count": {
+          "minimum": 0,
+          "title": "Nonfinite Measurement Count",
+          "type": "integer"
+        },
+        "null_measurement_count": {
+          "minimum": 0,
+          "title": "Null Measurement Count",
+          "type": "integer"
+        },
+        "observed_well_count": {
+          "minimum": 0,
+          "title": "Observed Well Count",
+          "type": "integer"
+        },
+        "plate_format": {
+          "$ref": "#/$defs/PlateFormat"
+        },
+        "plate_id": {
+          "title": "Plate Id",
+          "type": "string"
+        },
+        "role_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/WellRole"
+          },
+          "title": "Role Counts",
+          "type": "object"
+        }
+      },
+      "required": [
+        "plate_id",
+        "plate_format",
+        "observed_well_count",
+        "expected_well_count",
+        "missing_measurement_count",
+        "null_measurement_count",
+        "nonfinite_measurement_count",
+        "empty_well_count",
+        "empty_missing_measurement_count",
+        "empty_null_measurement_count",
+        "empty_nonfinite_measurement_count",
+        "missing_design_annotation_count",
+        "role_counts"
+      ],
+      "title": "PlateDesignSummary",
+      "type": "object"
+    },
+    "PlateFormat": {
+      "description": "Standard plate geometries supported by benchmark configurations.",
+      "enum": [
+        "96_well",
+        "384_well"
+      ],
+      "title": "PlateFormat",
+      "type": "string"
+    },
+    "PublicArtifactHashes": {
+      "additionalProperties": false,
+      "description": "Verified hashes for the five investigator-visible case artifacts.",
+      "properties": {
+        "measurements": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Measurements",
+          "type": "string"
+        },
+        "metadata": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Metadata",
+          "type": "string"
+        },
+        "plate_map": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plate Map",
+          "type": "string"
+        },
+        "problem_statement": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Problem Statement",
+          "type": "string"
+        },
+        "protocol": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Protocol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measurements",
+        "plate_map",
+        "metadata",
+        "protocol",
+        "problem_statement"
+      ],
+      "title": "PublicArtifactHashes",
+      "type": "object"
+    },
+    "SignalDirection": {
+      "description": "How to interpret movement in the assay signal.",
+      "enum": [
+        "lower_is_stronger"
+      ],
+      "title": "SignalDirection",
+      "type": "string"
+    },
+    "TreatmentDoseSeries": {
+      "additionalProperties": false,
+      "description": "Observed doses for one treatment and unit combination.",
+      "properties": {
+        "dose_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose Unit"
+        },
+        "doses": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Doses",
+          "type": "array"
+        },
+        "treatment": {
+          "title": "Treatment",
+          "type": "string"
+        }
+      },
+      "required": [
+        "treatment",
+        "doses"
+      ],
+      "title": "TreatmentDoseSeries",
+      "type": "object"
+    },
+    "WellRole": {
+      "description": "Allowed roles for wells in an investigator-visible plate map.",
+      "enum": [
+        "negative_control",
+        "positive_control",
+        "treatment",
+        "empty"
+      ],
+      "title": "WellRole",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Ground-truth-free input accepted by analysis tools and agents.",
+  "properties": {
+    "case_id": {
+      "pattern": "^case_[0-9a-f]{16}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "design": {
+      "$ref": "#/$defs/DesignSummary"
+    },
+    "measurements": {
+      "items": {
+        "$ref": "#/$defs/InvestigatorMeasurement"
+      },
+      "title": "Measurements",
+      "type": "array"
+    },
+    "metadata": {
+      "$ref": "#/$defs/InvestigatorMetadata"
+    },
+    "plate_map": {
+      "items": {
+        "$ref": "#/$defs/InvestigatorPlateMapWell"
+      },
+      "title": "Plate Map",
+      "type": "array"
+    },
+    "problem_statement": {
+      "minLength": 1,
+      "title": "Problem Statement",
+      "type": "string"
+    },
+    "protocol": {
+      "minLength": 1,
+      "title": "Protocol",
+      "type": "string"
+    },
+    "public_artifact_hashes": {
+      "$ref": "#/$defs/PublicArtifactHashes"
+    }
+  },
+  "required": [
+    "case_id",
+    "measurements",
+    "plate_map",
+    "metadata",
+    "protocol",
+    "problem_statement",
+    "public_artifact_hashes",
+    "design"
+  ],
+  "title": "InvestigatorCase",
+  "type": "object"
+}

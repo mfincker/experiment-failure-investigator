@@ -91,3 +91,53 @@ Generation, serialization, validation, plotting, deterministic QC tools, evidenc
 models, and final report contracts should remain unchanged when orchestration
 moves from Pydantic AI to LangGraph. Only workflow state transitions, model/tool
 routing, checkpointing, and loop control should differ.
+
+## Week 2: deterministic investigator contracts
+
+Frozen versions:
+
+- investigator, scientific-tool-result, and baseline-report JSON Schemas: first
+  committed Week 2 revisions;
+- missingness tool: `1.0.0`;
+- control-summary tool: `1.0.0`;
+- replicate-variability tool: `1.0.0`;
+- dose-response tool: `1.0.0`;
+- spatial-effects tool: `1.0.0`;
+- batch-comparison tool: `1.0.0`;
+- diagnostic-plot tool: `1.0.0`;
+- deterministic baseline report: `1.0.0`;
+- synthetic-benchmark heuristic configuration: `1.0.0`; and
+- batch QC summary: `1.0.0`.
+
+The committed schemas in `docs/schemas` are the compatibility boundary for the
+first agent workflow. Changing a field's meaning, requiredness, or serialized
+shape requires an explicit version decision rather than silently regenerating
+the schema.
+
+### Evidence before hypotheses
+
+Week 2 deliberately contains no model-selected tools or generated hypotheses.
+The loader verifies the public artifact hashes, builds a ground-truth-free
+investigator input, and discards the evaluation manifest. Deterministic tools
+then return stable evidence IDs derived from public scope, parameters, tool name,
+and tool version. Findings may cite those records but may not embed uncited
+numbers. Runtime timestamps remain outside scientific equality.
+
+### Applicability and failure-closed behavior
+
+`not_applicable` means the observed design lacks a concept required by a tool;
+`insufficient_data` means the concept exists but usable observations are
+inadequate. Unsupported split-across-plate biological replicates are not pooled
+or treated as complete plate replicates. Empty positions remain part of design
+and missingness accounting but are excluded from signal statistics and fits.
+
+### Frozen benchmark limitations
+
+The current benchmark is suitable for developing deterministic contracts, not
+for claiming general laboratory performance. Most cases reuse one 96-well layout,
+all cases are synthetic and single-cause, assay thresholds are fixture-specific,
+and the only supported multi-plate design uses complete replicate plates.
+Spatial evidence is associative rather than causal, and normalized measurements
+cannot recover pre-normalization shifts that normalization removed. Novel
+layouts, 384-well plates, split-replicate designs, assay blanks, mapped-empty
+signal anomalies, and mixed causes remain explicitly deferred.

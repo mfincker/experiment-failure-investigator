@@ -198,14 +198,13 @@ Each step ends with a reviewable checkpoint. Codex should implement and verify o
 checkpoint at a time, then summarize scientific assumptions before proceeding
 when those assumptions materially affect interpretation.
 
-Implementation status as of the CLI baseline checkpoint:
+Implementation status as of the contract-freeze checkpoint:
 
-- Steps 1–7 are implemented and committed.
-- Step 8 is implemented and committed, including versioned synthetic-benchmark
-  heuristics and evidence-linked JSON and Markdown output.
-- Step 9 is implemented for review, including single-case and batch execution,
-  overwrite protection, opaque report directories, and a compact batch index.
-- Step 10 remains pending until the deterministic baseline is approved.
+- Steps 1–9 are implemented and committed.
+- Step 10 is implemented for review, including frozen schemas and versions,
+  exact CLI documentation, explicit limitations, a selected golden report, and
+  automated dependency-boundary checks.
+- Week 2 will close after human review of the deterministic baseline.
 
 ### 1. Add the investigator-safe loader and design summary
 
@@ -492,20 +491,20 @@ Verification:
 
 ## Week 2 exit checklist
 
-- [ ] Investigator-facing case and design-summary contracts are strict and
+- [x] Investigator-facing case and design-summary contracts are strict and
   ground-truth-free.
-- [ ] Tool statuses distinguish success, not applicable, insufficient data, and
+- [x] Tool statuses distinguish success, not applicable, insufficient data, and
   errors.
-- [ ] Every scientific result has stable evidence IDs and public-input provenance.
-- [ ] Missingness, controls, replicates, spatial effects, dose response, batches,
+- [x] Every scientific result has stable evidence IDs and public-input provenance.
+- [x] Missingness, controls, replicates, spatial effects, dose response, batches,
   and diagnostic plotting tools are independently tested.
-- [ ] Tools handle observed design variation or return a structured limitation.
-- [ ] Multi-plate analysis is limited to complete replicate plates, and
+- [x] Tools handle observed design variation or return a structured limitation.
+- [x] Multi-plate analysis is limited to complete replicate plates, and
   split-across-plate designs fail closed with an explicit limitation.
-- [ ] The deterministic report contains no uncited numeric claims.
-- [ ] No investigator input or report contains planted labels or private truth.
-- [ ] All fourteen benchmark cases produce validated JSON and Markdown reports.
-- [ ] The CLI and tests run with Ollama stopped and without network access.
+- [x] The deterministic report contains no uncited numeric claims.
+- [x] No investigator input or report contains planted labels or private truth.
+- [x] All fourteen benchmark cases produce validated JSON and Markdown reports.
+- [x] The CLI and tests run with Ollama stopped and without network access.
 - [ ] A human has reviewed the deterministic baseline before Week 3 prompting.
 
 ## Explicitly deferred

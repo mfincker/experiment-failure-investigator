@@ -30,6 +30,7 @@ from experiment_failure_investigator.reporting.baseline import (
 )
 
 ZERO_HASH = "0" * 64
+GOLDEN_DIRECTORY = Path(__file__).parents[2] / "golden"
 HASHES = PublicArtifactHashes(
     measurements=ZERO_HASH,
     plate_map=ZERO_HASH,
@@ -138,6 +139,14 @@ def test_report_is_identical_across_output_directories(tmp_path: Path) -> None:
 
     assert first == second
     assert canonical_json(first) == canonical_json(second)
+
+
+def test_selected_markdown_report_matches_golden_file(tmp_path: Path) -> None:
+    report = _report("weak_controls_obvious", tmp_path / "plots")
+
+    assert render_baseline_markdown(report) == (
+        GOLDEN_DIRECTORY / "weak_controls_obvious.report.md"
+    ).read_text(encoding="utf-8")
 
 
 def test_fixed_clean_fixture_has_no_baseline_findings(tmp_path: Path) -> None:

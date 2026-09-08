@@ -1,0 +1,377 @@
+{
+  "$defs": {
+    "ArtifactAttachment": {
+      "additionalProperties": false,
+      "description": "A non-numeric file artifact produced by a scientific tool.",
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "media_type": {
+          "pattern": "^[a-z0-9.+-]+/[a-z0-9.+-]+$",
+          "title": "Media Type",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "sha256",
+        "media_type",
+        "description"
+      ],
+      "title": "ArtifactAttachment",
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "description": "One traceable numeric or structured scientific observation.",
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_id": {
+          "pattern": "^ev_[0-9a-f]{20}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "metric_name": {
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Metric Name",
+          "type": "string"
+        },
+        "sample_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Count"
+        },
+        "scope": {
+          "$ref": "#/$defs/EvidenceScope"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "metric_name",
+        "value",
+        "scope",
+        "description"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "EvidenceScope": {
+      "additionalProperties": false,
+      "description": "Canonical public-data scope for one scientific measurement.",
+      "properties": {
+        "case_id": {
+          "pattern": "^case_[0-9a-f]{16}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "dimensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Dimensions",
+          "type": "object"
+        },
+        "dose_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dose Unit"
+        },
+        "doses": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Doses",
+          "type": "array"
+        },
+        "plate_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Plate Ids",
+          "type": "array"
+        },
+        "treatments": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Treatments",
+          "type": "array"
+        },
+        "well_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Well Ids",
+          "type": "array"
+        },
+        "well_roles": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/WellRole"
+          },
+          "title": "Well Roles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case_id"
+      ],
+      "title": "EvidenceScope",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "PublicArtifactHashes": {
+      "additionalProperties": false,
+      "description": "Verified hashes for the five investigator-visible case artifacts.",
+      "properties": {
+        "measurements": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Measurements",
+          "type": "string"
+        },
+        "metadata": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Metadata",
+          "type": "string"
+        },
+        "plate_map": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plate Map",
+          "type": "string"
+        },
+        "problem_statement": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Problem Statement",
+          "type": "string"
+        },
+        "protocol": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Protocol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measurements",
+        "plate_map",
+        "metadata",
+        "protocol",
+        "problem_statement"
+      ],
+      "title": "PublicArtifactHashes",
+      "type": "object"
+    },
+    "ResultWarning": {
+      "additionalProperties": false,
+      "description": "Structured caution associated with a scientific result.",
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Code",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ResultWarning",
+      "type": "object"
+    },
+    "ScientificProvenance": {
+      "additionalProperties": false,
+      "description": "Stable public-input provenance for a deterministic result.",
+      "properties": {
+        "case_id": {
+          "pattern": "^case_[0-9a-f]{16}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "public_artifact_hashes": {
+          "$ref": "#/$defs/PublicArtifactHashes"
+        }
+      },
+      "required": [
+        "case_id",
+        "public_artifact_hashes"
+      ],
+      "title": "ScientificProvenance",
+      "type": "object"
+    },
+    "ToolStatus": {
+      "description": "Scientific outcome of one deterministic tool invocation.",
+      "enum": [
+        "success",
+        "not_applicable",
+        "insufficient_data",
+        "error"
+      ],
+      "title": "ToolStatus",
+      "type": "string"
+    },
+    "WellRole": {
+      "description": "Allowed roles for wells in an investigator-visible plate map.",
+      "enum": [
+        "negative_control",
+        "positive_control",
+        "treatment",
+        "empty"
+      ],
+      "title": "WellRole",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Deterministic scientific output, excluding execution telemetry.",
+  "properties": {
+    "attachments": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ArtifactAttachment"
+      },
+      "title": "Attachments",
+      "type": "array"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EvidenceRecord"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "limitations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "parameters": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "provenance": {
+      "$ref": "#/$defs/ScientificProvenance"
+    },
+    "scope": {
+      "$ref": "#/$defs/EvidenceScope"
+    },
+    "status": {
+      "$ref": "#/$defs/ToolStatus"
+    },
+    "status_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status Reason"
+    },
+    "tool_name": {
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Tool Name",
+      "type": "string"
+    },
+    "tool_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Tool Version",
+      "type": "string"
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ResultWarning"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "tool_name",
+    "tool_version",
+    "scope",
+    "provenance"
+  ],
+  "title": "ScientificToolResult",
+  "type": "object"
+}
