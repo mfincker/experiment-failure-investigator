@@ -270,11 +270,15 @@ Implementation status:
 - Step 4 is implemented and committed. Prompt version `1.0.0` is a hashed text
   artifact; deterministic assembly keeps trusted instructions separate from
   delimited untrusted case JSON and enforces a character budget.
-- Step 5 is implemented for review. The Pydantic AI agent uses typed per-run
+- Step 5 is implemented and committed. The Pydantic AI agent uses typed per-run
   dependencies, exposes only the three bounded evidence tools, returns typed
   semantic tool errors, and retries invalid output through cross-evidence
   validation.
-- Steps 6–10 remain pending.
+- Step 6 is implemented for review. The single-run controller composes public
+  loading, deterministic QC, briefing and prompt assembly, bounded agent
+  execution, cross-evidence validation, artifact writing, and typed terminal
+  traces without requiring Ollama in its default tests.
+- Steps 7–10 remain pending.
 
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 

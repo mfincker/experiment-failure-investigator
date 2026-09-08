@@ -214,3 +214,25 @@ catalog listing, bounded result inspection, and exact evidence resolution.
 Structured output is a separate framework output tool, not another scientific
 capability. Cross-object output failures raise a bounded `ModelRetry`; they never
 turn an invalid model response into accepted prose.
+
+### Bounded single-run controller
+
+The controller is the supported composition boundary: it loads a public case,
+builds and writes the unchanged deterministic baseline, creates the briefing and
+versioned prompt, constructs typed dependencies, invokes the agent, revalidates
+its output against the baseline, and writes a terminal trace. It refuses an
+existing output directory. A failed run writes its baseline and failure trace but
+never writes `investigation.json`.
+
+Pydantic AI enforces cumulative request, application-tool-call, and reported token
+limits. The configured request timeout is passed to the model, while an
+application timeout bounds the remaining model phase after deterministic setup.
+Local and smoke modes also run the non-mutating Ollama preflight; a missing model
+tag and an unavailable provider produce distinct failures before any model call.
+
+Request and tool-call budgets can be checked before another action. Token counts
+may only become available after a provider response, so a truthful
+`budget_exhausted` trace may record token usage beyond its configured limit.
+Successful and non-budget-failure traces still reject such an overage. This
+distinction avoids hiding the very measurement that explains why execution
+stopped.

@@ -239,7 +239,12 @@ class InvestigationTrace(AgentStrictModel):
             (self.usage.output_tokens, self.runtime.output_tokens_limit, "output"),
             (self.usage.total_tokens, self.runtime.total_tokens_limit, "total"),
         )
+        budget_failure = (
+            self.status is RunStatus.FAILED
+            and self.failure is not None
+            and self.failure.code is RunFailureCode.BUDGET_EXHAUSTED
+        )
         for observed, limit, name in token_limits:
-            if observed is not None and observed > limit:
+            if observed is not None and observed > limit and not budget_failure:
                 raise ValueError(f"reported {name} tokens exceed the configured limit")
         return self

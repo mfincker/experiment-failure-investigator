@@ -27,6 +27,13 @@ from experiment_failure_investigator.analysis.contracts import InvestigatorCase
 from experiment_failure_investigator.reporting.baseline import BaselineReport
 
 DEFAULT_MAX_RESOLVED_EVIDENCE_IDS = 10
+INVESTIGATOR_TOOL_NAMES = frozenset(
+    {
+        "inspect_diagnostic_result",
+        "list_diagnostic_results",
+        "resolve_evidence",
+    }
+)
 
 
 class EvidenceToolErrorCode(StrEnum):

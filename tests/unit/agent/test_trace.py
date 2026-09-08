@@ -244,6 +244,28 @@ def test_trace_rejects_usage_beyond_configured_budgets() -> None:
     with pytest.raises(ValidationError, match="requests exceed"):
         InvestigationTrace.model_validate(values)
 
+    token_values = _trace().model_dump(mode="python")
+    token_values["usage"]["input_tokens"] = 40000
+    token_values["usage"]["total_tokens"] = 40050
+    with pytest.raises(ValidationError, match="input tokens exceed"):
+        InvestigationTrace.model_validate(token_values)
+
+
+def test_budget_failure_trace_may_record_measured_token_overage() -> None:
+    values = _trace().model_dump(mode="python")
+    values["status"] = RunStatus.FAILED
+    values["output"] = None
+    values["failure"] = RunFailure(
+        code=RunFailureCode.BUDGET_EXHAUSTED,
+        detail="Provider-reported token use crossed the configured limit.",
+    )
+    values["usage"]["input_tokens"] = 40000
+    values["usage"]["total_tokens"] = 40050
+
+    trace = InvestigationTrace.model_validate(values)
+
+    assert trace.usage.input_tokens == 40000
+
 
 def test_usage_rejects_inconsistent_tokens_or_nonzero_local_cost() -> None:
     with pytest.raises(ValidationError, match="input plus output"):

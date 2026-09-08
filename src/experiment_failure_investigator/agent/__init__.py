@@ -32,6 +32,7 @@ from experiment_failure_investigator.agent.evidence import (
     resolve_evidence,
 )
 from experiment_failure_investigator.agent.investigator import (
+    INVESTIGATOR_TOOL_NAMES,
     EvidenceToolError,
     EvidenceToolErrorCode,
     InvestigatorDependencies,
@@ -58,6 +59,11 @@ from experiment_failure_investigator.agent.trace import (
     hash_prompt,
     new_run_id,
 )
+from experiment_failure_investigator.agent.controller import (
+    InvestigationArtifacts,
+    InvestigationRun,
+    run_investigation,
+)
 
 __all__ = [
     "ALLOWED_DIAGNOSTIC_TOOLS",
@@ -74,6 +80,9 @@ __all__ = [
     "EvidenceToolErrorCode",
     "FailureHypothesis",
     "InvestigationTrace",
+    "InvestigationArtifacts",
+    "InvestigationRun",
+    "INVESTIGATOR_TOOL_NAMES",
     "InvestigatorDependencies",
     "InvestigatorOutput",
     "ModelEvent",
@@ -105,5 +114,6 @@ __all__ = [
     "new_run_id",
     "preflight_ollama",
     "resolve_evidence",
+    "run_investigation",
     "validate_output_against_baseline",
 ]
