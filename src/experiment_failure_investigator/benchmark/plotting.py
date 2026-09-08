@@ -428,13 +428,20 @@ def _control_layers(
 
 def build_dose_response_chart(
     assay: AssayTables,
-    metadata: PlotMetadata,
+    metadata: PlotMetadata | PublicPlotMetadata,
     *,
     signal_domain: tuple[float, float] | None = None,
+    fit_curves: pd.DataFrame | None = None,
 ) -> alt.LayerChart | alt.HConcatChart:
-    """Build replicate and mean dose responses with control reference bands."""
+    """Build replicate, mean, and optional fitted dose responses."""
     frame = _plot_frame(assay)
     domain = _validate_domain(signal_domain or shared_signal_domain(assay))
+    has_fitted_curves = fit_curves is not None and not fit_curves.empty
+    line_note = (
+        "solid lines = means · dashed lines = fitted curves"
+        if has_fitted_curves
+        else "solid lines = means"
+    )
     plate_ids = sorted(frame["plate_id"].unique())
     if len(plate_ids) > 1:
         panels: list[alt.LayerChart] = []
@@ -451,13 +458,18 @@ def build_dose_response_chart(
                 view,
                 metadata,
                 signal_domain=domain,
+                fit_curves=(
+                    None
+                    if not has_fitted_curves
+                    else fit_curves[fit_curves["plate_id"] == plate_id].copy()
+                ),
             ).properties(title=alt.TitleParams(text=str(plate_id), anchor="middle"))
             panels.append(panel)
         return alt.hconcat(*panels, spacing=24).properties(
             title=_title(
                 "Dose response",
                 metadata,
-                "points = replicates · lines = means · control bands = mean ± SD",
+                f"points = replicates · {line_note}",
             )
         )
 
@@ -551,7 +563,32 @@ def build_dose_response_chart(
             ],
         )
     )
-    layers = [*_control_layers(frame, dose_domain, domain), error_bars, points, means]
+    layers: list[alt.Chart] = [
+        *_control_layers(frame, dose_domain, domain),
+        error_bars,
+        points,
+        means,
+    ]
+    if fit_curves is not None and not fit_curves.empty:
+        fitted = alt.Chart(fit_curves).mark_line(
+            strokeDash=[7, 4],
+            strokeWidth=2.5,
+        ).encode(
+            x=x,
+            y=alt.Y(
+                "fitted_signal:Q",
+                title="Raw signal",
+                scale=alt.Scale(domain=list(domain)),
+            ),
+            color=color,
+            tooltip=[
+                alt.Tooltip("plate_id:N", title="Plate"),
+                alt.Tooltip("treatment:N", title="Treatment"),
+                alt.Tooltip("dose:Q", title="Dose (µM)", format=".4g"),
+                alt.Tooltip("fitted_signal:Q", title="Fitted signal", format=".4f"),
+            ],
+        )
+        layers.append(fitted)
     chart = alt.layer(*layers).properties(width=560, height=360)
     return _facet_if_needed(
         chart,
@@ -559,14 +596,14 @@ def build_dose_response_chart(
         _title(
             "Dose response",
             metadata,
-            "points = replicates · lines = means · control bands = mean ± SD",
+            f"points = replicates · {line_note}",
         ),
     )
 
 
 def build_control_qc_chart(
     assay: AssayTables,
-    metadata: PlotMetadata,
+    metadata: PlotMetadata | PublicPlotMetadata,
     *,
     signal_domain: tuple[float, float] | None = None,
 ) -> alt.LayerChart:
@@ -627,11 +664,11 @@ def build_control_qc_chart(
             alt.Tooltip("raw_signal:Q", title="Raw signal", format=".4f"),
         ],
     )
-    error_bars = alt.Chart(controls).mark_errorbar(
-        extent="stdev",
-        ticks=True,
-        color="#111827",
-    ).encode(x=x, xOffset=offset, y=y)
+    boxes = alt.Chart(controls).mark_boxplot(
+        extent=1.5,
+        size=48,
+        opacity=0.35,
+    ).encode(x=x, xOffset=offset, y=y, color=color)
     means = alt.Chart(controls).mark_tick(
         thickness=3,
         size=24,
@@ -641,13 +678,13 @@ def build_control_qc_chart(
         xOffset=offset,
         y=alt.Y("mean(raw_signal):Q", scale=alt.Scale(domain=list(domain))),
     )
-    return alt.layer(error_bars, points, means).properties(
+    return alt.layer(boxes, points, means).properties(
         width=460,
         height=340,
         title=_title(
             "Control QC",
             metadata,
-            "points = wells · ticks = means · intervals = ±1 SD",
+            "boxes = quartiles and whiskers · points = wells · ticks = means",
         ),
     )
 

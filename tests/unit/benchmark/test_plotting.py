@@ -171,16 +171,40 @@ def test_dose_response_has_log_doses_replicates_means_and_controls(
     assert sum(layer.get("mark", {}).get("type") == "rect" for layer in layers) == 2
     assert sum(layer.get("mark", {}).get("type") == "rule" for layer in layers) == 2
 
-def test_control_qc_has_wells_means_and_standard_deviation(
+def test_control_qc_has_boxplots_wells_and_means(
     clean: CleanAssayResult,
     metadata: PlotMetadata,
 ) -> None:
     spec = build_control_qc_chart(clean, metadata).to_dict()
     mark_types = [layer["mark"]["type"] for layer in spec["layer"]]
 
-    assert mark_types == ["errorbar", "circle", "tick"]
-    assert spec["layer"][0]["mark"]["extent"] == "stdev"
+    assert mark_types == ["boxplot", "circle", "tick"]
     assert spec["layer"][2]["encoding"]["y"]["aggregate"] == "mean"
+
+
+def test_dose_response_can_overlay_fitted_curves(
+    clean: CleanAssayResult,
+    metadata: PlotMetadata,
+) -> None:
+    fit_curves = pd.DataFrame(
+        {
+            "plate_id": ["plate_01", "plate_01"],
+            "treatment": ["test_treatment", "test_treatment"],
+            "dose": [0.003, 10.0],
+            "fitted_signal": [1.0, 0.2],
+        }
+    )
+
+    spec = build_dose_response_chart(
+        clean,
+        metadata,
+        fit_curves=fit_curves,
+    ).to_dict()
+    fitted_layer = spec["layer"][-1]
+
+    assert fitted_layer["mark"]["type"] == "line"
+    assert fitted_layer["mark"]["strokeDash"] == [7, 4]
+    assert fitted_layer["encoding"]["y"]["field"] == "fitted_signal"
 
 
 def test_comparison_grid_has_clean_and_injected_rows_with_four_views(

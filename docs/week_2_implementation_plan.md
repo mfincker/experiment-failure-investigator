@@ -200,10 +200,11 @@ when those assumptions materially affect interpretation.
 
 Implementation status as of the diagnostic-layer review checkpoint:
 
-- Steps 1–4 are implemented and committed.
-- Steps 5–7 are implemented together for scientific and visual review.
-- Steps 8–10 remain pending; baseline interpretation and CLI orchestration will
-  start only after the diagnostic outputs below are approved.
+- Steps 1–7 are implemented and committed.
+- Step 8 is implemented for review, including versioned synthetic-benchmark
+  heuristics and evidence-linked JSON and Markdown output.
+- Steps 9–10 remain pending; CLI orchestration will start after the deterministic
+  baseline report is approved.
 
 ### 1. Add the investigator-safe loader and design summary
 
@@ -362,24 +363,34 @@ Verification:
 
 Checkpoint: approve one matched-comparison result and its limitations.
 
-### 7. Wrap existing heatmaps as an analysis tool
+### 7. Wrap existing diagnostic plots as analysis tools
 
 Actions:
 
-- Implement `generate_plate_heatmap` as a typed wrapper around the existing
-  Altair plotting functions.
+- Implement typed public-data wrappers around the existing Altair plotting
+  functions for raw and residual heatmaps, control distributions, and dose
+  responses.
 - Accept only public case data and explicit output paths.
 - Return plot artifact paths and hashes as evidence attachments, not as numeric
   evidence.
 - Preserve fixed orientation and explicit color domains.
+- Render control distributions as boxplots with well-level observations and mean
+  markers.
+- Overlay the deterministic fitted dose-response curve when estimable while
+  retaining replicate points, condition means, uncertainty, and control bands.
+- Return `not_applicable` or `insufficient_data` for unavailable plot concepts
+  without preventing the remaining plots from being generated.
 
 Verification:
 
-- PNG export remains deterministic for the same environment and inputs.
+- All four PNG exports remain deterministic for the same environment and inputs.
 - Tool results contain no latent or planted-failure fields.
 - Invalid or escaping output paths fail closed.
+- Missing controls or dose series produce typed non-success results rather than
+  exceptions.
 
-Checkpoint: compare the wrapper output with an approved Week 1 case plot.
+Checkpoint: compare the four-plot public diagnostic set with the approved Week 1
+inspection plots.
 
 ### 8. Build the deterministic baseline report
 
@@ -486,7 +497,7 @@ Verification:
   errors.
 - [ ] Every scientific result has stable evidence IDs and public-input provenance.
 - [ ] Missingness, controls, replicates, spatial effects, dose response, batches,
-  and heatmap tools are independently tested.
+  and diagnostic plotting tools are independently tested.
 - [ ] Tools handle observed design variation or return a structured limitation.
 - [ ] Multi-plate analysis is limited to complete replicate plates, and
   split-across-plate designs fail closed with an explicit limitation.

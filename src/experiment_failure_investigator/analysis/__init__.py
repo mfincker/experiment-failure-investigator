@@ -17,7 +17,11 @@ from experiment_failure_investigator.analysis.batches import compare_batches
 from experiment_failure_investigator.analysis.controls import summarize_controls
 from experiment_failure_investigator.analysis.design import build_investigator_case
 from experiment_failure_investigator.analysis.dose_response import fit_dose_response
-from experiment_failure_investigator.analysis.heatmaps import generate_plate_heatmap
+from experiment_failure_investigator.analysis.heatmaps import (
+    DiagnosticPlotKind,
+    generate_diagnostic_plot,
+    generate_plate_heatmap,
+)
 from experiment_failure_investigator.analysis.missingness import inspect_missingness
 from experiment_failure_investigator.analysis.replicates import (
     calculate_replicate_variability,
@@ -48,6 +52,7 @@ __all__ = [
     "ConditionCoverage",
     "DesignCapabilities",
     "DesignSummary",
+    "DiagnosticPlotKind",
     "EvidenceId",
     "EvidenceRecord",
     "EvidenceScope",
@@ -76,6 +81,7 @@ __all__ = [
     "detect_spatial_effects",
     "fit_dose_response",
     "generate_plate_heatmap",
+    "generate_diagnostic_plot",
     "inspect_missingness",
     "summarize_controls",
 ]
