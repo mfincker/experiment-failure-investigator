@@ -261,10 +261,13 @@ Implementation status:
 - Step 1 is implemented and committed. The local Pydantic AI dependency targets
   the tested `2.x` API; configuration and Ollama preflight are typed, bounded,
   loopback-only, and covered without live model calls.
-- Step 2 is implemented for review, including strict hypothesis, investigator
+- Step 2 is implemented and committed, including strict hypothesis, investigator
   output, run trace, event-integrity, usage, evidence-graph validation, prompt
   hashing, and schema-generation contracts.
-- Steps 3–10 remain pending.
+- Step 3 is implemented for review. Agent context is a compact projection of
+  public case context and the deterministic baseline; evidence access is
+  allowlisted, read-only, filtered, paginated, and capped by runtime limits.
+- Steps 4–10 remain pending.
 
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 

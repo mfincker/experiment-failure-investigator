@@ -69,6 +69,31 @@ replicates or pooling wells naively.
 confounding biological condition, plate, and batch effects, and the report states
 which comparisons are identifiable.
 
+## Agent-guided diagnostic roadmap
+
+### Capture proposed diagnostics from unresolved investigations
+
+**When:** after the initial Investigator output and evaluation workflow are stable.
+
+Extend the Investigator output with structured diagnostic requests for scientific
+questions that the available deterministic evidence cannot answer. Each request
+should state the question, required public inputs, proposed metric or comparison,
+expected output, hypotheses it would discriminate between, why current tools are
+insufficient, feasibility or priority, and relevant existing evidence IDs.
+
+Treat these requests as reviewed product-development inputs, not executable agent
+tools. The Investigator must not generate and run arbitrary analysis code. A
+person reviews recurring proposals, implements accepted analyses as deterministic
+validated diagnostics, and makes their evidence available through
+`BaselineReport`. Aggregate sanitized requests across investigations to identify
+high-value additions to the diagnostic library without exposing benchmark truth
+or private experimental data.
+
+**Done when:** valid Investigator outputs can record bounded, evidence-linked
+diagnostic proposals; evaluation distinguishes useful discriminating requests
+from redundant or impossible ones; and recurring reviewed requests can be
+summarized into a prioritized diagnostic-development list.
+
 ## Explicitly deferred infrastructure
 
 A dedicated layout registry is not planned now. Version-controlled case configuration and generated fingerprints should be sufficient for the expected benchmark size. Reconsider a registry only if managing layouts through ordinary case metadata becomes error-prone.

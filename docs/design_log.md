@@ -160,3 +160,21 @@ Execution-specific timestamps and durations remain runtime telemetry and do not
 alter scientific evidence identities. Successful and failed terminal states are
 mutually exclusive, and reported request, tool-call, and token usage cannot
 exceed the captured runtime configuration.
+
+### Compact context and evidence access
+
+The model receives a compact briefing derived only from `InvestigatorCase` and
+`BaselineReport`, not either complete object. The briefing retains public assay
+context, plate and treatment summaries, design capabilities, neutral findings,
+diagnostic statuses, warnings, limitations, evidence references, and metric
+prefixes. It omits raw measurements, the complete plate map, tool parameters,
+artifact paths, and the complete evidence index.
+
+The deterministic diagnostics still run once before model inference. Agent tools
+only query their frozen results: an explicit tool-name allowlist prevents access
+from expanding when unrelated code is added, scope and metric filters must match
+the selected result catalog, pages are ordered by stable evidence ID, and both
+page size and exact evidence-ID resolution are hard-capped. For the representative
+`weak_controls_obvious` development case, canonical briefing JSON is about four
+percent of the complete deterministic baseline JSON; this is a payload comparison,
+not a token-count or model-performance claim.
