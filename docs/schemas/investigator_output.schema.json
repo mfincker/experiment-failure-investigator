@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "ConfidenceCategory": {
+      "description": "Qualitative confidence without pretending the model is calibrated.",
+      "enum": [
+        "high",
+        "moderate",
+        "low",
+        "indeterminate"
+      ],
+      "title": "ConfidenceCategory",
+      "type": "string"
+    },
+    "FailureHypothesis": {
+      "additionalProperties": false,
+      "description": "One provisional mechanism grounded in deterministic evidence.",
+      "properties": {
+        "alternative_explanations": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Alternative Explanations",
+          "type": "array"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceCategory"
+        },
+        "contradicting_evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Contradicting Evidence Ids",
+          "type": "array"
+        },
+        "falsification_check": {
+          "minLength": 1,
+          "title": "Falsification Check",
+          "type": "string"
+        },
+        "missing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Missing Evidence",
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "proposed_mechanism": {
+          "minLength": 1,
+          "title": "Proposed Mechanism",
+          "type": "string"
+        },
+        "rank": {
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "supporting_evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Supporting Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rank",
+        "name",
+        "proposed_mechanism",
+        "confidence",
+        "missing_evidence",
+        "alternative_explanations",
+        "falsification_check"
+      ],
+      "title": "FailureHypothesis",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Validated structured result returned by the Week 3 investigator.",
+  "properties": {
+    "case_id": {
+      "pattern": "^case_[0-9a-f]{16}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/FailureHypothesis"
+      },
+      "maxItems": 4,
+      "minItems": 2,
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "overall_assessment": {
+      "minLength": 1,
+      "title": "Overall Assessment",
+      "type": "string"
+    },
+    "recommendation_evidence_ids": {
+      "items": {
+        "pattern": "^ev_[0-9a-f]{20}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Recommendation Evidence Ids",
+      "type": "array"
+    },
+    "recommended_next_check": {
+      "minLength": 1,
+      "title": "Recommended Next Check",
+      "type": "string"
+    },
+    "remaining_uncertainty": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Remaining Uncertainty",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0.0",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "hypotheses",
+    "overall_assessment",
+    "remaining_uncertainty",
+    "recommended_next_check",
+    "recommendation_evidence_ids",
+    "limitations"
+  ],
+  "title": "InvestigatorOutput",
+  "type": "object"
+}

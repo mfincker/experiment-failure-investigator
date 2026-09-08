@@ -10,6 +10,27 @@ from experiment_failure_investigator.agent.config import (
     load_runtime_config,
     preflight_ollama,
 )
+from experiment_failure_investigator.agent.contracts import (
+    ConfidenceCategory,
+    FailureHypothesis,
+    InvestigatorOutput,
+    validate_output_against_baseline,
+)
+from experiment_failure_investigator.agent.trace import (
+    AgentUsage,
+    InvestigationTrace,
+    ModelEvent,
+    ModelEventType,
+    RunFailure,
+    RunFailureCode,
+    RunStatus,
+    RuntimeSnapshot,
+    ToolEvent,
+    VersionRecord,
+    hash_json_payload,
+    hash_prompt,
+    new_run_id,
+)
 
 __all__ = [
     "AgentRuntimeConfig",
@@ -20,4 +41,21 @@ __all__ = [
     "config_for_mode",
     "load_runtime_config",
     "preflight_ollama",
+    "AgentUsage",
+    "ConfidenceCategory",
+    "FailureHypothesis",
+    "InvestigationTrace",
+    "InvestigatorOutput",
+    "ModelEvent",
+    "ModelEventType",
+    "RunFailure",
+    "RunFailureCode",
+    "RunStatus",
+    "RuntimeSnapshot",
+    "ToolEvent",
+    "VersionRecord",
+    "hash_json_payload",
+    "hash_prompt",
+    "new_run_id",
+    "validate_output_against_baseline",
 ]

@@ -258,10 +258,13 @@ must actively forbid accidental model requests.
 
 Implementation status:
 
-- Step 1 is implemented for review. The local Pydantic AI dependency now targets
+- Step 1 is implemented and committed. The local Pydantic AI dependency targets
   the tested `2.x` API; configuration and Ollama preflight are typed, bounded,
   loopback-only, and covered without live model calls.
-- Steps 2–10 remain pending.
+- Step 2 is implemented for review, including strict hypothesis, investigator
+  output, run trace, event-integrity, usage, evidence-graph validation, prompt
+  hashing, and schema-generation contracts.
+- Steps 3–10 remain pending.
 
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 

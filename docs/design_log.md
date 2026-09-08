@@ -141,3 +141,22 @@ Spatial evidence is associative rather than causal, and normalized measurements
 cannot recover pre-normalization shifts that normalization removed. Novel
 layouts, 384-well plates, split-replicate designs, assay blanks, mapped-empty
 signal anomalies, and mixed causes remain explicitly deferred.
+
+## Week 3: single-investigator agent contracts
+
+Initial contract versions:
+
+- investigator output: `1.0.0`; and
+- investigation trace: `1.0.0`.
+
+Hypotheses use categorical confidence rather than uncalibrated numeric
+probabilities. Model-generated narrative cannot embed numbers; quantitative
+claims must instead cite existing Week 2 evidence IDs. Pydantic validates the
+shape of the model output, while a separate application check verifies its opaque
+case ID and every citation against the frozen baseline evidence graph.
+
+Trace events retain sanitized JSON payloads plus canonical SHA-256 digests.
+Execution-specific timestamps and durations remain runtime telemetry and do not
+alter scientific evidence identities. Successful and failed terminal states are
+mutually exclusive, and reported request, tool-call, and token usage cannot
+exceed the captured runtime configuration.

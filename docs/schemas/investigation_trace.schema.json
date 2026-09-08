@@ -1,0 +1,674 @@
+{
+  "$defs": {
+    "AgentUsage": {
+      "additionalProperties": false,
+      "description": "Provider-reported usage, allowing absent token counts.",
+      "properties": {
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "monetary_provider_cost_usd": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Monetary Provider Cost Usd",
+          "type": "number"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "requests": {
+          "minimum": 0,
+          "title": "Requests",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "minimum": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        }
+      },
+      "required": [
+        "requests",
+        "tool_calls"
+      ],
+      "title": "AgentUsage",
+      "type": "object"
+    },
+    "ConfidenceCategory": {
+      "description": "Qualitative confidence without pretending the model is calibrated.",
+      "enum": [
+        "high",
+        "moderate",
+        "low",
+        "indeterminate"
+      ],
+      "title": "ConfidenceCategory",
+      "type": "string"
+    },
+    "FailureHypothesis": {
+      "additionalProperties": false,
+      "description": "One provisional mechanism grounded in deterministic evidence.",
+      "properties": {
+        "alternative_explanations": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Alternative Explanations",
+          "type": "array"
+        },
+        "confidence": {
+          "$ref": "#/$defs/ConfidenceCategory"
+        },
+        "contradicting_evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Contradicting Evidence Ids",
+          "type": "array"
+        },
+        "falsification_check": {
+          "minLength": 1,
+          "title": "Falsification Check",
+          "type": "string"
+        },
+        "missing_evidence": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Missing Evidence",
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "proposed_mechanism": {
+          "minLength": 1,
+          "title": "Proposed Mechanism",
+          "type": "string"
+        },
+        "rank": {
+          "maximum": 4,
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "supporting_evidence_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "title": "Supporting Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rank",
+        "name",
+        "proposed_mechanism",
+        "confidence",
+        "missing_evidence",
+        "alternative_explanations",
+        "falsification_check"
+      ],
+      "title": "FailureHypothesis",
+      "type": "object"
+    },
+    "InvestigatorOutput": {
+      "additionalProperties": false,
+      "description": "Validated structured result returned by the Week 3 investigator.",
+      "properties": {
+        "case_id": {
+          "pattern": "^case_[0-9a-f]{16}$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "hypotheses": {
+          "items": {
+            "$ref": "#/$defs/FailureHypothesis"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "title": "Hypotheses",
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Limitations",
+          "type": "array"
+        },
+        "overall_assessment": {
+          "minLength": 1,
+          "title": "Overall Assessment",
+          "type": "string"
+        },
+        "recommendation_evidence_ids": {
+          "items": {
+            "pattern": "^ev_[0-9a-f]{20}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Recommendation Evidence Ids",
+          "type": "array"
+        },
+        "recommended_next_check": {
+          "minLength": 1,
+          "title": "Recommended Next Check",
+          "type": "string"
+        },
+        "remaining_uncertainty": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Remaining Uncertainty",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.0.0",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id",
+        "hypotheses",
+        "overall_assessment",
+        "remaining_uncertainty",
+        "recommended_next_check",
+        "recommendation_evidence_ids",
+        "limitations"
+      ],
+      "title": "InvestigatorOutput",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "ModelEvent": {
+      "additionalProperties": false,
+      "description": "One sanitized JSON model event with an integrity digest.",
+      "properties": {
+        "event_type": {
+          "$ref": "#/$defs/ModelEventType"
+        },
+        "payload": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "payload_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Payload Sha256",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sequence",
+        "event_type",
+        "payload",
+        "payload_sha256"
+      ],
+      "title": "ModelEvent",
+      "type": "object"
+    },
+    "ModelEventType": {
+      "description": "Model-side transitions captured without provider-specific classes.",
+      "enum": [
+        "request",
+        "response",
+        "validation_retry"
+      ],
+      "title": "ModelEventType",
+      "type": "string"
+    },
+    "PublicArtifactHashes": {
+      "additionalProperties": false,
+      "description": "Verified hashes for the five investigator-visible case artifacts.",
+      "properties": {
+        "measurements": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Measurements",
+          "type": "string"
+        },
+        "metadata": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Metadata",
+          "type": "string"
+        },
+        "plate_map": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Plate Map",
+          "type": "string"
+        },
+        "problem_statement": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Problem Statement",
+          "type": "string"
+        },
+        "protocol": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Protocol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measurements",
+        "plate_map",
+        "metadata",
+        "protocol",
+        "problem_statement"
+      ],
+      "title": "PublicArtifactHashes",
+      "type": "object"
+    },
+    "RunFailure": {
+      "additionalProperties": false,
+      "description": "Sanitized typed failure retained instead of unvalidated prose.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/RunFailureCode"
+        },
+        "detail": {
+          "minLength": 1,
+          "title": "Detail",
+          "type": "string"
+        },
+        "validation_attempts": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Validation Attempts",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "code",
+        "detail"
+      ],
+      "title": "RunFailure",
+      "type": "object"
+    },
+    "RunFailureCode": {
+      "description": "Failure families exposed by the future single-run controller.",
+      "enum": [
+        "provider_unavailable",
+        "model_missing",
+        "validation_failed",
+        "budget_exhausted",
+        "timeout",
+        "internal_error"
+      ],
+      "title": "RunFailureCode",
+      "type": "string"
+    },
+    "RunStatus": {
+      "description": "Terminal status of one bounded investigator execution.",
+      "enum": [
+        "success",
+        "failed"
+      ],
+      "title": "RunStatus",
+      "type": "string"
+    },
+    "RuntimeMode": {
+      "description": "Supported Week 3 execution profiles.",
+      "enum": [
+        "mock",
+        "replay",
+        "local",
+        "smoke"
+      ],
+      "title": "RuntimeMode",
+      "type": "string"
+    },
+    "RuntimeSnapshot": {
+      "additionalProperties": false,
+      "description": "Model, prompt, and budget settings captured for one run.",
+      "properties": {
+        "input_tokens_limit": {
+          "minimum": 1,
+          "title": "Input Tokens Limit",
+          "type": "integer"
+        },
+        "max_evidence_records": {
+          "minimum": 1,
+          "title": "Max Evidence Records",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "minimum": 1,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "model_tag": {
+          "minLength": 1,
+          "title": "Model Tag",
+          "type": "string"
+        },
+        "ollama_base_url": {
+          "minLength": 1,
+          "title": "Ollama Base Url",
+          "type": "string"
+        },
+        "output_tokens_limit": {
+          "minimum": 1,
+          "title": "Output Tokens Limit",
+          "type": "integer"
+        },
+        "output_validation_retries": {
+          "minimum": 0,
+          "title": "Output Validation Retries",
+          "type": "integer"
+        },
+        "prompt_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Prompt Sha256",
+          "type": "string"
+        },
+        "prompt_version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "provider": {
+          "const": "ollama",
+          "title": "Provider",
+          "type": "string"
+        },
+        "request_limit": {
+          "minimum": 1,
+          "title": "Request Limit",
+          "type": "integer"
+        },
+        "request_timeout_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Request Timeout Seconds",
+          "type": "number"
+        },
+        "run_timeout_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Run Timeout Seconds",
+          "type": "number"
+        },
+        "runtime_mode": {
+          "$ref": "#/$defs/RuntimeMode"
+        },
+        "temperature": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "tool_calls_limit": {
+          "minimum": 0,
+          "title": "Tool Calls Limit",
+          "type": "integer"
+        },
+        "total_tokens_limit": {
+          "minimum": 1,
+          "title": "Total Tokens Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "runtime_mode",
+        "provider",
+        "model_tag",
+        "ollama_base_url",
+        "prompt_version",
+        "prompt_sha256",
+        "temperature",
+        "max_output_tokens",
+        "request_limit",
+        "tool_calls_limit",
+        "input_tokens_limit",
+        "output_tokens_limit",
+        "total_tokens_limit",
+        "output_validation_retries",
+        "request_timeout_seconds",
+        "run_timeout_seconds",
+        "max_evidence_records"
+      ],
+      "title": "RuntimeSnapshot",
+      "type": "object"
+    },
+    "ToolEvent": {
+      "additionalProperties": false,
+      "description": "One bounded agent tool call and validated JSON return.",
+      "properties": {
+        "arguments": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "arguments_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Arguments Sha256",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "result_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Result Sha256",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "tool_name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "tool_name",
+        "arguments",
+        "arguments_sha256",
+        "result",
+        "result_sha256"
+      ],
+      "title": "ToolEvent",
+      "type": "object"
+    },
+    "VersionRecord": {
+      "additionalProperties": false,
+      "description": "Named semantic version included in runtime provenance.",
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "VersionRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Complete validated trace for one bounded Week 3 execution.",
+  "properties": {
+    "application_commit": {
+      "minLength": 1,
+      "title": "Application Commit",
+      "type": "string"
+    },
+    "baseline_report_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Baseline Report Version",
+      "type": "string"
+    },
+    "case_id": {
+      "pattern": "^case_[0-9a-f]{16}$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "duration_seconds": {
+      "minimum": 0,
+      "title": "Duration Seconds",
+      "type": "number"
+    },
+    "failure": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RunFailure"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "heuristic_version": {
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Heuristic Version",
+      "type": "string"
+    },
+    "model_events": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ModelEvent"
+      },
+      "title": "Model Events",
+      "type": "array"
+    },
+    "output": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InvestigatorOutput"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "public_artifact_hashes": {
+      "$ref": "#/$defs/PublicArtifactHashes"
+    },
+    "pydantic_ai_version": {
+      "minLength": 1,
+      "title": "Pydantic Ai Version",
+      "type": "string"
+    },
+    "python_version": {
+      "minLength": 1,
+      "title": "Python Version",
+      "type": "string"
+    },
+    "run_id": {
+      "pattern": "^run_[0-9a-f]{20}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "runtime": {
+      "$ref": "#/$defs/RuntimeSnapshot"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/RunStatus"
+    },
+    "tool_events": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ToolEvent"
+      },
+      "title": "Tool Events",
+      "type": "array"
+    },
+    "tool_versions": {
+      "items": {
+        "$ref": "#/$defs/VersionRecord"
+      },
+      "title": "Tool Versions",
+      "type": "array"
+    },
+    "trace_version": {
+      "default": "1.0.0",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Trace Version",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "#/$defs/AgentUsage"
+    }
+  },
+  "required": [
+    "run_id",
+    "case_id",
+    "public_artifact_hashes",
+    "application_commit",
+    "python_version",
+    "pydantic_ai_version",
+    "runtime",
+    "baseline_report_version",
+    "heuristic_version",
+    "tool_versions",
+    "status",
+    "usage",
+    "started_at",
+    "duration_seconds"
+  ],
+  "title": "InvestigationTrace",
+  "type": "object"
+}
