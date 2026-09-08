@@ -198,13 +198,14 @@ Each step ends with a reviewable checkpoint. Codex should implement and verify o
 checkpoint at a time, then summarize scientific assumptions before proceeding
 when those assumptions materially affect interpretation.
 
-Implementation status as of the diagnostic-layer review checkpoint:
+Implementation status as of the CLI baseline checkpoint:
 
 - Steps 1–7 are implemented and committed.
-- Step 8 is implemented for review, including versioned synthetic-benchmark
+- Step 8 is implemented and committed, including versioned synthetic-benchmark
   heuristics and evidence-linked JSON and Markdown output.
-- Steps 9–10 remain pending; CLI orchestration will start after the deterministic
-  baseline report is approved.
+- Step 9 is implemented for review, including single-case and batch execution,
+  overwrite protection, opaque report directories, and a compact batch index.
+- Step 10 remains pending until the deterministic baseline is approved.
 
 ### 1. Add the investigator-safe loader and design summary
 
