@@ -9,7 +9,7 @@ dependencies = [
     "numpy>=2.0",
     "pandas>=2.2",
     "pydantic>=2.10",
-    "pydantic-ai>=0.8.1",
+    "pydantic-ai>=2.38,<3",
     "scipy>=1.14",
     "vl-convert-python>=1.7",
 ]

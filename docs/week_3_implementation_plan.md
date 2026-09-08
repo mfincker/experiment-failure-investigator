@@ -256,6 +256,13 @@ they are application assumptions.
 Each step ends in a reviewable checkpoint. Default tests must remain offline and
 must actively forbid accidental model requests.
 
+Implementation status:
+
+- Step 1 is implemented for review. The local Pydantic AI dependency now targets
+  the tested `2.x` API; configuration and Ollama preflight are typed, bounded,
+  loopback-only, and covered without live model calls.
+- Steps 2–10 remain pending.
+
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 
 Actions:

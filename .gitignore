@@ -29,3 +29,4 @@ htmlcov/
 # Temporary human-review plots generated before case serialization
 /artifacts/
 /reports/
+/runs/
