@@ -31,6 +31,12 @@ from experiment_failure_investigator.agent.evidence import (
     list_diagnostic_results,
     resolve_evidence,
 )
+from experiment_failure_investigator.agent.prompts import (
+    AssembledPrompt,
+    PromptArtifact,
+    assemble_investigator_prompt,
+    load_system_prompt,
+)
 from experiment_failure_investigator.agent.trace import (
     AgentUsage,
     InvestigationTrace,
@@ -52,6 +58,7 @@ __all__ = [
     "AgentBriefing",
     "AgentRuntimeConfig",
     "AgentUsage",
+    "AssembledPrompt",
     "ConfidenceCategory",
     "DiagnosticResultCatalogEntry",
     "DiagnosticResultList",
@@ -65,6 +72,7 @@ __all__ = [
     "OllamaPreflightResult",
     "OllamaPreflightStatus",
     "PlateBriefing",
+    "PromptArtifact",
     "ResolvedEvidence",
     "RunFailure",
     "RunFailureCode",
@@ -74,6 +82,7 @@ __all__ = [
     "ToolEvent",
     "TreatmentBriefing",
     "VersionRecord",
+    "assemble_investigator_prompt",
     "build_agent_briefing",
     "build_ollama_model",
     "config_for_mode",
@@ -82,6 +91,7 @@ __all__ = [
     "inspect_diagnostic_result",
     "list_diagnostic_results",
     "load_runtime_config",
+    "load_system_prompt",
     "new_run_id",
     "preflight_ollama",
     "resolve_evidence",

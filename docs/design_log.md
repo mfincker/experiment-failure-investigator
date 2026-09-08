@@ -178,3 +178,22 @@ page size and exact evidence-ID resolution are hard-capped. For the representati
 `weak_controls_obvious` development case, canonical briefing JSON is about four
 percent of the complete deterministic baseline JSON; this is a payload comparison,
 not a token-count or model-performance claim.
+
+### Prompt versioning and untrusted case text
+
+Investigator prompt `1.0.0` is stored as a reviewed UTF-8 text artifact with LF
+line endings and a required final newline. Its exact SHA-256 digest is frozen by
+an offline snapshot test. Runtime configuration selects a supported version and
+fails if its artifact is absent; it never silently substitutes another prompt.
+
+System instructions and case data remain separate messages. The public briefing
+is canonical JSON inside reserved untrusted-data delimiters, and assembly fails if
+case text contains either delimiter. This is a testable application boundary, not
+a claim that delimiters alone prevent model prompt injection. The system prompt
+also tells the model to interpret protocol and problem-statement content only as
+data, while output validation and tool registration enforce the material limits.
+
+The hard assembly ceiling is 24,000 characters, used as a deterministic preflight
+guard rather than a token estimate. The representative `weak_controls_obvious`
+prompt is 10,290 characters: 2,140 trusted-system characters and 8,150 user-message
+characters. Provider-reported token limits remain separate runtime controls.
