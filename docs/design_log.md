@@ -197,3 +197,20 @@ The hard assembly ceiling is 24,000 characters, used as a deterministic prefligh
 guard rather than a token estimate. The representative `weak_controls_obvious`
 prompt is 10,290 characters: 2,140 trusted-system characters and 8,150 user-message
 characters. Provider-reported token limits remain separate runtime controls.
+
+### Framework-managed exchange versus application-owned boundaries
+
+Pydantic AI owns tool-schema publication, tool-call dispatch, typed output
+parsing, validation retry messages, and the model request/response exchange. The
+application owns the per-run `InvestigatorCase` and frozen `BaselineReport`, the
+evidence page limit, semantic evidence validation, and conversion of rejected
+queries into sanitized typed tool errors. Case data is injected through typed run
+dependencies rather than globals or serialized into tool definitions.
+
+The agent is constructed by a factory so tests can supply `TestModel` or
+`FunctionModel` and production can supply the configured Ollama model without
+changing the scientific boundary. Its only application tools are diagnostic
+catalog listing, bounded result inspection, and exact evidence resolution.
+Structured output is a separate framework output tool, not another scientific
+capability. Cross-object output failures raise a bounded `ModelRetry`; they never
+turn an invalid model response into accepted prose.

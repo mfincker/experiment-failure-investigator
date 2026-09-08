@@ -31,6 +31,12 @@ from experiment_failure_investigator.agent.evidence import (
     list_diagnostic_results,
     resolve_evidence,
 )
+from experiment_failure_investigator.agent.investigator import (
+    EvidenceToolError,
+    EvidenceToolErrorCode,
+    InvestigatorDependencies,
+    build_investigator_agent,
+)
 from experiment_failure_investigator.agent.prompts import (
     AssembledPrompt,
     PromptArtifact,
@@ -64,8 +70,11 @@ __all__ = [
     "DiagnosticResultList",
     "EvidenceFilters",
     "EvidencePage",
+    "EvidenceToolError",
+    "EvidenceToolErrorCode",
     "FailureHypothesis",
     "InvestigationTrace",
+    "InvestigatorDependencies",
     "InvestigatorOutput",
     "ModelEvent",
     "ModelEventType",
@@ -84,6 +93,7 @@ __all__ = [
     "VersionRecord",
     "assemble_investigator_prompt",
     "build_agent_briefing",
+    "build_investigator_agent",
     "build_ollama_model",
     "config_for_mode",
     "hash_json_payload",

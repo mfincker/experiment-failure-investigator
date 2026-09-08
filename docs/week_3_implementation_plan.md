@@ -267,10 +267,14 @@ Implementation status:
 - Step 3 is implemented and committed. Agent context is a compact projection of
   public case context and the deterministic baseline; evidence access is
   allowlisted, read-only, filtered, paginated, and capped by runtime limits.
-- Step 4 is implemented for review. Prompt version `1.0.0` is a hashed text
+- Step 4 is implemented and committed. Prompt version `1.0.0` is a hashed text
   artifact; deterministic assembly keeps trusted instructions separate from
   delimited untrusted case JSON and enforces a character budget.
-- Steps 5–10 remain pending.
+- Step 5 is implemented for review. The Pydantic AI agent uses typed per-run
+  dependencies, exposes only the three bounded evidence tools, returns typed
+  semantic tool errors, and retries invalid output through cross-evidence
+  validation.
+- Steps 6–10 remain pending.
 
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 
