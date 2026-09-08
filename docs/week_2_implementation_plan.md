@@ -204,7 +204,7 @@ Implementation status as of the contract-freeze checkpoint:
 - Step 10 is implemented for review, including frozen schemas and versions,
   exact CLI documentation, explicit limitations, a selected golden report, and
   automated dependency-boundary checks.
-- Week 2 will close after human review of the deterministic baseline.
+- Week 2 is complete following human review of the deterministic baseline.
 
 ### 1. Add the investigator-safe loader and design summary
 
@@ -505,7 +505,7 @@ Verification:
 - [x] No investigator input or report contains planted labels or private truth.
 - [x] All fourteen benchmark cases produce validated JSON and Markdown reports.
 - [x] The CLI and tests run with Ollama stopped and without network access.
-- [ ] A human has reviewed the deterministic baseline before Week 3 prompting.
+- [x] A human has reviewed the deterministic baseline before Week 3 prompting.
 
 ## Explicitly deferred
 

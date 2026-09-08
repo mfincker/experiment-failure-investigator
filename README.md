@@ -43,8 +43,9 @@ Completed:
 
 Next:
 
-- Review the deterministic fourteen-case baseline, then plan Week 3 model-driven
-  hypothesis generation without changing the frozen scientific contracts.
+- Execute the detailed [Week 3 implementation plan](docs/week_3_implementation_plan.md)
+  to add bounded Pydantic AI hypothesis generation through local Ollama/Qwen
+  without changing the frozen scientific contracts.
 
 The CLI can generate and validate the Week 1 benchmark without Ollama, network access, or a model API.
 
