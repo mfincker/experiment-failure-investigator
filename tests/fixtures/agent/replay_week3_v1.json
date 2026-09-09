@@ -1,0 +1,301 @@
+{
+  "fixture_version": "1.0.0",
+  "scenarios": [
+    {
+      "scenario": "direct_output",
+      "case_id": "case_923eb39b90afc333",
+      "turns": [
+        {
+          "expect": {"kind": "initial"},
+          "respond": {
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_085706f59ff47fc2d524"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "catalog_then_output",
+      "case_id": "case_923eb39b90afc333",
+      "turns": [
+        {
+          "expect": {"kind": "initial"},
+          "respond": {
+            "tool_calls": [
+              {
+                "tool_name": "list_diagnostic_results",
+                "arguments": {},
+                "tool_call_id": "catalog"
+              }
+            ]
+          }
+        },
+        {
+          "expect": {
+            "kind": "tool_results",
+            "tool_results": [
+              {"tool_name": "list_diagnostic_results", "tool_call_id": "catalog"}
+            ]
+          },
+          "respond": {
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_085706f59ff47fc2d524"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "bounded_evidence_then_output",
+      "case_id": "case_923eb39b90afc333",
+      "turns": [
+        {
+          "expect": {"kind": "initial"},
+          "respond": {
+            "tool_calls": [
+              {
+                "tool_name": "list_diagnostic_results",
+                "arguments": {},
+                "tool_call_id": "catalog"
+              },
+              {
+                "tool_name": "inspect_diagnostic_result",
+                "arguments": {
+                  "tool_name": "summarize_controls",
+                  "metric_prefix": "controls",
+                  "plate_id": "plate_01",
+                  "offset": 0,
+                  "limit": 2
+                },
+                "tool_call_id": "inspect"
+              },
+              {
+                "tool_name": "resolve_evidence",
+                "arguments": {"evidence_ids": ["ev_085706f59ff47fc2d524"]},
+                "tool_call_id": "resolve"
+              }
+            ]
+          }
+        },
+        {
+          "expect": {
+            "kind": "tool_results",
+            "tool_results": [
+              {"tool_name": "list_diagnostic_results", "tool_call_id": "catalog"},
+              {"tool_name": "inspect_diagnostic_result", "tool_call_id": "inspect"},
+              {"tool_name": "resolve_evidence", "tool_call_id": "resolve"}
+            ]
+          },
+          "respond": {
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_085706f59ff47fc2d524"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "retry_corrected_output",
+      "case_id": "case_923eb39b90afc333",
+      "turns": [
+        {
+          "expect": {"kind": "initial"},
+          "respond": {
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_ffffffffffffffffffff"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        },
+        {
+          "expect": {
+            "kind": "validation_retry",
+            "retry_contains": "unknown evidence IDs"
+          },
+          "respond": {
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_085706f59ff47fc2d524"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scenario": "token_budget_exhausted",
+      "case_id": "case_923eb39b90afc333",
+      "turns": [
+        {
+          "expect": {"kind": "initial"},
+          "respond": {
+            "usage": {"input_tokens": 40000, "output_tokens": 1},
+            "output": {
+              "case_id": "case_923eb39b90afc333",
+              "hypotheses": [
+                {
+                  "rank": 1,
+                  "name": "Control preparation variation",
+                  "proposed_mechanism": "Control preparation may have reduced assay separation.",
+                  "confidence": "moderate",
+                  "supporting_evidence_ids": ["ev_085706f59ff47fc2d524"],
+                  "missing_evidence": ["Independent control preparation records"],
+                  "alternative_explanations": ["Plate handling variation"],
+                  "falsification_check": "Repeat controls using an independent preparation."
+                },
+                {
+                  "rank": 2,
+                  "name": "Plate handling variation",
+                  "proposed_mechanism": "Plate handling may have changed signal quality.",
+                  "confidence": "low",
+                  "supporting_evidence_ids": ["ev_08ce40a9e274ce97a62e"],
+                  "missing_evidence": ["Independent plate handling records"],
+                  "alternative_explanations": ["Control preparation variation"],
+                  "falsification_check": "Repeat the assay with matched handling."
+                }
+              ],
+              "overall_assessment": "The control behavior warrants review.",
+              "remaining_uncertainty": ["The physical cause remains unavailable."],
+              "recommended_next_check": "Repeat controls from an independent preparation.",
+              "recommendation_evidence_ids": ["ev_085706f59ff47fc2d524"],
+              "limitations": ["The evidence does not identify a physical cause."]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -236,3 +236,23 @@ may only become available after a provider response, so a truthful
 Successful and non-budget-failure traces still reject such an overage. This
 distinction avoids hiding the very measurement that explains why execution
 stopped.
+
+### Offline model testing and replay
+
+The default pytest configuration sets Pydantic AI's provider-request guard to
+false. Local `TestModel` and `FunctionModel` exchanges still run because they do
+not access a provider, while an accidentally supplied Ollama model fails before
+opening a network request. Local and smoke execution outside pytest remain
+available through explicit runtime configuration.
+
+`TestModel` checks basic framework wiring and registered schemas. `FunctionModel`
+supports focused programmatic behavior in unit tests. The application replay
+adapter adds a stricter integration layer: a versioned fixture records only
+model decisions, expected application-tool result transitions, optional usage,
+and structured output for an opaque public case ID. It verifies each transition
+in order and raises on extra, missing, or different requests; it never falls
+back to a provider.
+
+Replay fixtures contain no case directory names, manifests, planted failure
+labels, or private benchmark truth. They validate orchestration deterministically
+but do not establish that Ollama or Qwen will make the recorded decisions.

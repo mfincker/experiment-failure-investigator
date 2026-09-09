@@ -274,11 +274,15 @@ Implementation status:
   dependencies, exposes only the three bounded evidence tools, returns typed
   semantic tool errors, and retries invalid output through cross-evidence
   validation.
-- Step 6 is implemented for review. The single-run controller composes public
+- Step 6 is implemented and committed. The single-run controller composes public
   loading, deterministic QC, briefing and prompt assembly, bounded agent
   execution, cross-evidence validation, artifact writing, and typed terminal
   traces without requiring Ollama in its default tests.
-- Steps 7–10 remain pending.
+- Step 7 is implemented for review. Default tests disable provider requests;
+  `TestModel` covers basic framework wiring, while sanitized versioned replay
+  fixtures drive exact no-tool, tool-use, retry, and budget paths through the
+  complete controller without Ollama.
+- Steps 8–10 remain pending.
 
 ### 1. Freeze Week 3 configuration and inspect the local runtime
 
@@ -573,8 +577,8 @@ default `uv run pytest` command even when an Ollama server happens to be running
 - [ ] Evidence tools are allowlisted, read-only, paginated, and bounded.
 - [ ] Prompt version and hash are recorded in every run.
 - [ ] Requests, tool calls, tokens, retries, and wall time are bounded.
-- [ ] Default tests forbid model requests and pass with Ollama stopped.
-- [ ] Mock and replay modes exercise the complete controller.
+- [x] Default tests forbid model requests and pass without Ollama.
+- [x] Mock and replay modes exercise the complete controller.
 - [ ] Codex rehearsal inputs contain no evaluation-only truth.
 - [ ] At least one real local Qwen call succeeds through Pydantic AI, or its
   incompatibility is captured as a typed failure with enough evidence to choose a

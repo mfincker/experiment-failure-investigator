@@ -85,8 +85,8 @@ class InvestigationArtifacts(AgentStrictModel):
     output_directory: Path
     baseline_json: Path
     baseline_markdown: Path
-    investigation_json: Path | None = None
     trace_json: Path
+    investigation_json: Path | None = None
 
 
 class InvestigationRun(AgentStrictModel):
