@@ -190,6 +190,15 @@ with less code without weakening the scientific or framework boundary?
 
 ## Execution plan
 
+Implementation status:
+
+- Step 0 is complete. The 306-test offline baseline passed, and Step 8 plus this
+  plan were committed separately without staging user-owned files.
+- Step 1 is implemented for review. The normal CLI now reaches the existing
+  controller with local Ollama configuration, uses an opaque default run path,
+  refuses overwrite, and is covered end to end by an offline replay model.
+- Steps 2–5 remain pending.
+
 ### Step 0 — Preserve and verify the starting point
 
 Inspect:

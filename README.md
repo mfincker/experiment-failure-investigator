@@ -5,8 +5,8 @@ An API-driven scientific reasoning system for investigating failed plate-based b
 The project is intentionally split between scientific computation and language-model reasoning:
 
 - Python tools calculate statistics and produce traceable evidence.
-- Pydantic models define state and component boundaries.
-- Pydantic AI will orchestrate the first agent workflow.
+- Pydantic models validate scientific inputs and model-facing boundaries.
+- Pydantic AI orchestrates the first investigator workflow.
 - LangGraph will later reimplement the same workflow for comparison.
 - Ollama with a local Qwen model will provide inference without per-token API charges.
 - A human remains responsible for accepting, rejecting, or revising recommendations.
@@ -14,7 +14,8 @@ The project is intentionally split between scientific computation and language-m
 ## Project status
 
 The Week 1 synthetic benchmark and Week 2 deterministic investigation layer are
-complete.
+complete. The Week 3 single-investigator workflow is implemented and can be run
+through the CLI for local Ollama testing.
 
 Completed:
 
@@ -40,12 +41,14 @@ Completed:
 - Evidence-linked JSON and Markdown reports with label-free scientific content
 - Offline single-case and fourteen-case batch QC CLI workflows
 - Frozen JSON Schemas and a reproducible golden Markdown report
+- A bounded Pydantic AI investigator with evidence tools, structured output,
+  offline replay tests, and machine-readable traces
+- A normal terminal command for one local Ollama/Qwen investigation
 
 Next:
 
-- Execute the detailed [Week 3 implementation plan](docs/week_3_implementation_plan.md)
-  to add bounded Pydantic AI hypothesis generation through local Ollama/Qwen
-  without changing the frozen scientific contracts.
+- Complete the local Qwen capability spike and simplify the Week 3 model flow as
+  described in the [simplification plan](docs/simplification_plan.md).
 
 The CLI can generate and validate the Week 1 benchmark without Ollama, network access, or a model API.
 
@@ -69,7 +72,8 @@ All data and failure scenarios are synthetic. Recommendations are designed for h
 
 - Python 3.12 or newer
 - [uv](https://docs.astral.sh/uv/)
-- Ollama and a compatible local Qwen model later in the project; neither is needed for the current tests
+- Ollama and an installed compatible Qwen model for live investigations; neither
+  is needed for the test suite or deterministic QC
 
 ## Setup
 
@@ -148,6 +152,31 @@ asking a language model to reproduce the calculation.
 The generated [case index](cases/index.json) records case IDs, modes, variants,
 seeds, paths, validation state, and layout fingerprints. Open the local
 [review grid](cases/review.html) to inspect every clean/injected comparison.
+
+### Run the investigator with local Qwen
+
+Start Ollama and make sure the default `qwen2.5:7b` tag is already installed,
+then run one case:
+
+```bash
+uv run experiment-failure-investigator run cases/weak_controls_obvious
+```
+
+The application checks Ollama availability but never starts Ollama or downloads
+a model. By default it writes to `runs/<opaque-case-id>` and refuses to overwrite
+an existing run directory. Choose an explicit destination or another installed
+model when needed:
+
+```bash
+uv run experiment-failure-investigator run cases/weak_controls_obvious \
+  --output runs/weak-controls-review \
+  --model qwen2.5:7b
+```
+
+The command writes the deterministic baseline, `investigation.json`, and
+`trace.json`. Model tag and local endpoint can also be set through
+`EFI_MODEL_TAG` and `EFI_OLLAMA_BASE_URL`; use `--ollama-base-url` for a one-run
+override.
 
 ## Run the tests
 

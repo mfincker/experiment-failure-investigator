@@ -59,3 +59,24 @@ def test_validate_cases_command_dispatches_requested_path(
     main(["validate-cases", str(path)])
 
     assert "Validated 14 cases" in capsys.readouterr().out
+
+
+def test_run_parser_exposes_only_local_runtime_inputs() -> None:
+    args = build_parser().parse_args(
+        [
+            "run",
+            "cases/example",
+            "--output",
+            "runs/example",
+            "--model",
+            "qwen:test",
+            "--ollama-base-url",
+            "http://127.0.0.1:11434/v1",
+        ]
+    )
+
+    assert args.command == "run"
+    assert args.path == Path("cases/example")
+    assert args.output == Path("runs/example")
+    assert args.model_tag == "qwen:test"
+    assert args.ollama_base_url == "http://127.0.0.1:11434/v1"

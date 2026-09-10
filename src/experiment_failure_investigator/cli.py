@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
 
+from pydantic_ai.models import Model
+
+from experiment_failure_investigator.agent.config import (
+    AgentRuntimeConfig,
+    build_ollama_model,
+    load_runtime_config,
+)
+from experiment_failure_investigator.agent.controller import (
+    InvestigationRun,
+    run_investigation,
+)
+from experiment_failure_investigator.agent.trace import RunStatus
 from experiment_failure_investigator.benchmark.adapter import load_investigator_case
 from experiment_failure_investigator.benchmark.registry import (
     generate_registered_cases,
@@ -74,6 +87,28 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="Overwrite an existing report directory.",
+    )
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run one bounded investigation through Pydantic AI and Ollama.",
+    )
+    run_parser.add_argument("path", type=Path, help="Case directory to investigate.")
+    run_parser.add_argument(
+        "--output",
+        type=Path,
+        help="Run directory (default: runs/<opaque-case-id>).",
+    )
+    run_parser.add_argument(
+        "--model",
+        dest="model_tag",
+        help="Installed Ollama model tag (default: EFI_MODEL_TAG or qwen2.5:7b).",
+    )
+    run_parser.add_argument(
+        "--ollama-base-url",
+        help=(
+            "Local Ollama OpenAI-compatible URL "
+            "(default: EFI_OLLAMA_BASE_URL or http://localhost:11434/v1)."
+        ),
     )
     batch_parser = subparsers.add_parser(
         "qc-batch",
@@ -171,6 +206,44 @@ def _run_batch_qc(
     return summary, json_path, markdown_path
 
 
+def _runtime_config_with_overrides(
+    *,
+    model_tag: str | None,
+    ollama_base_url: str | None,
+) -> AgentRuntimeConfig:
+    """Load runtime settings and apply the two user-facing CLI overrides."""
+    values = load_runtime_config().model_dump(mode="python")
+    if model_tag is not None:
+        values["model_tag"] = model_tag
+    if ollama_base_url is not None:
+        values["ollama_base_url"] = ollama_base_url
+    return AgentRuntimeConfig.model_validate(values)
+
+
+async def _run_single_investigation(
+    case_path: Path,
+    output: Path | None,
+    *,
+    config: AgentRuntimeConfig,
+    model: Model | None = None,
+) -> InvestigationRun:
+    """Run one case through the existing controller with a safe output path."""
+    case = load_investigator_case(case_path)
+    run_directory = output or Path("runs") / case.case_id
+    _reject_output_inside_input(case_path, run_directory)
+    if run_directory.exists():
+        raise FileExistsError(
+            f"run output already exists: {run_directory}; choose a new directory"
+        )
+    selected_model = build_ollama_model(config) if model is None else model
+    return await run_investigation(
+        case_path,
+        run_directory,
+        model=selected_model,
+        config=config,
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     """Run the command-line interface."""
     parser = build_parser()
@@ -191,6 +264,43 @@ def main(argv: Sequence[str] | None = None) -> None:
         except (FileExistsError, FileNotFoundError, ValueError) as error:
             parser.error(str(error))
         print(f"Wrote deterministic QC report to {json_path} and {markdown_path}")
+    elif args.command == "run":
+        try:
+            config = _runtime_config_with_overrides(
+                model_tag=args.model_tag,
+                ollama_base_url=args.ollama_base_url,
+            )
+            run = asyncio.run(
+                _run_single_investigation(
+                    args.path,
+                    args.output,
+                    config=config,
+                )
+            )
+        except (FileExistsError, FileNotFoundError, ValueError) as error:
+            parser.error(str(error))
+        if run.trace.status is RunStatus.FAILED:
+            failure = run.trace.failure
+            if failure is None:
+                parser.error(
+                    f"investigation failed without a failure record; trace: "
+                    f"{run.artifacts.trace_json}"
+                )
+            parser.error(
+                f"investigation failed ({failure.code.value}): "
+                f"{failure.detail}; trace: {run.artifacts.trace_json}"
+            )
+        investigation_path = run.artifacts.investigation_json
+        if investigation_path is None:
+            parser.error(
+                "investigation succeeded without writing its validated output; "
+                f"trace: {run.artifacts.trace_json}"
+            )
+        print(
+            "Wrote validated investigation to "
+            f"{investigation_path} and trace to "
+            f"{run.artifacts.trace_json}"
+        )
     elif args.command == "qc-batch":
         try:
             summary, json_path, markdown_path = _run_batch_qc(
