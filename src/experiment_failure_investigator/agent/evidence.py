@@ -4,40 +4,23 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from datetime import date
-from typing import Annotated
 
-from pydantic import Field, StringConstraints
+from pydantic import Field, JsonValue
 
 from experiment_failure_investigator.agent.contracts import AgentStrictModel
-from experiment_failure_investigator.analysis.contracts import (
-    DesignCapabilities,
-    InvestigatorCase,
-)
+from experiment_failure_investigator.analysis.contracts import InvestigatorCase
 from experiment_failure_investigator.analysis.results import (
     EvidenceRecord,
     ResultWarning,
     ScientificToolResult,
     ToolStatus,
 )
-from experiment_failure_investigator.benchmark.models import (
-    AssayType,
-    PlateFormat,
-    SignalDirection,
-    WellRole,
-)
-from experiment_failure_investigator.reporting.baseline import (
-    BaselineFinding,
-    BaselineReport,
-)
+from experiment_failure_investigator.reporting.baseline import BaselineReport
 
 BRIEFING_VERSION = "1.0.0"
 DEFAULT_MAX_EVIDENCE_RECORDS = 25
 HARD_MAX_EVIDENCE_RECORDS = 50
-MetricPrefix = Annotated[
-    str,
-    StringConstraints(pattern=r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$"),
-]
+JsonObject = dict[str, JsonValue]
 
 # This explicit boundary must be reviewed whenever the deterministic layer grows.
 ALLOWED_DIAGNOSTIC_TOOLS = frozenset(
@@ -53,92 +36,12 @@ ALLOWED_DIAGNOSTIC_TOOLS = frozenset(
 )
 
 
-class PlateBriefing(AgentStrictModel):
-    """Compact public context for one observed plate."""
-
-    plate_id: str = Field(min_length=1)
-    batch_id: str = Field(min_length=1)
-    operator_label: str | None = None
-    run_date: date | None = None
-    instrument_label: str | None = None
-    plate_format: PlateFormat
-    observed_well_count: int = Field(ge=0)
-    expected_well_count: int = Field(ge=1)
-    well_role_counts: dict[WellRole, int]
-    missing_well_count: int = Field(ge=0)
-    unusable_nonempty_measurement_count: int = Field(ge=0)
-    empty_well_count: int = Field(ge=0)
-    missing_design_annotation_count: int = Field(ge=0)
-    geometry_inference_warning: str | None = None
-
-
-class TreatmentBriefing(AgentStrictModel):
-    """Observed public dose series for one treatment and unit."""
-
-    treatment: str = Field(min_length=1)
-    dose_unit: str | None = None
-    doses: tuple[float, ...]
-
-
-class DiagnosticResultCatalogEntry(AgentStrictModel):
-    """Non-tabular description of evidence available from one tool."""
-
-    tool_name: str
-    tool_versions: tuple[str, ...]
-    statuses: tuple[ToolStatus, ...]
-    status_reasons: tuple[str, ...]
-    invocation_count: int = Field(ge=1)
-    evidence_count: int = Field(ge=0)
-    plate_ids: tuple[str, ...]
-    well_roles: tuple[WellRole, ...]
-    treatments: tuple[str, ...]
-    metric_prefixes: tuple[MetricPrefix, ...]
-    warnings: tuple[ResultWarning, ...]
-    limitations: tuple[str, ...]
-    attachment_names: tuple[str, ...]
-
-
-class DiagnosticResultList(AgentStrictModel):
-    """Typed response for the diagnostic catalog tool."""
-
-    case_id: str = Field(pattern=r"^case_[0-9a-f]{16}$")
-    results: tuple[DiagnosticResultCatalogEntry, ...]
-
-
-class AgentBriefing(AgentStrictModel):
-    """Compact public case context suitable for a model prompt."""
-
-    briefing_version: str = Field(
-        default=BRIEFING_VERSION,
-        pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$",
-    )
-    case_id: str = Field(pattern=r"^case_[0-9a-f]{16}$")
-    assay_type: AssayType
-    signal_direction: SignalDirection
-    problem_statement: str = Field(min_length=1)
-    protocol: str = Field(min_length=1)
-    plates: tuple[PlateBriefing, ...]
-    treatments: tuple[TreatmentBriefing, ...]
-    capabilities: DesignCapabilities
-    findings: tuple[BaselineFinding, ...]
-    diagnostic_results: tuple[DiagnosticResultCatalogEntry, ...]
-    limitations: tuple[str, ...]
-
-
-class EvidenceFilters(AgentStrictModel):
-    """Filters applied to an evidence page."""
-
-    metric_prefix: MetricPrefix | None = None
-    plate_id: str | None = None
-    treatment: str | None = None
-
-
 class EvidencePage(AgentStrictModel):
     """Bounded, deterministic evidence returned for one diagnostic tool."""
 
     case_id: str = Field(pattern=r"^case_[0-9a-f]{16}$")
     tool_name: str
-    filters: EvidenceFilters
+    filters: dict[str, str | None]
     total_tool_evidence_count: int = Field(ge=0)
     matched_count: int = Field(ge=0)
     offset: int = Field(ge=0)
@@ -150,13 +53,6 @@ class EvidencePage(AgentStrictModel):
     status_reasons: tuple[str, ...]
     warnings: tuple[ResultWarning, ...]
     limitations: tuple[str, ...]
-
-
-class ResolvedEvidence(AgentStrictModel):
-    """Exact, bounded records resolved from model-provided evidence IDs."""
-
-    case_id: str = Field(pattern=r"^case_[0-9a-f]{16}$")
-    evidence: tuple[EvidenceRecord, ...]
 
 
 def _ensure_public_pair(case: InvestigatorCase, baseline: BaselineReport) -> None:
@@ -208,17 +104,22 @@ def _unique_warnings(
 def _catalog_entry(
     tool_name: str,
     results: tuple[ScientificToolResult, ...],
-) -> DiagnosticResultCatalogEntry:
+) -> JsonObject:
     """Summarize one diagnostic family without including evidence values."""
     evidence = tuple(record for result in results for record in result.evidence)
     scopes = tuple(result.scope for result in results) + tuple(
         record.scope for record in evidence
     )
-    return DiagnosticResultCatalogEntry(
-        tool_name=tool_name,
-        tool_versions=tuple(sorted({result.tool_version for result in results})),
-        statuses=tuple(sorted({result.status for result in results}, key=str)),
-        status_reasons=tuple(
+    return {
+        "tool_name": tool_name,
+        "tool_versions": list(
+            sorted({result.tool_version for result in results})
+        ),
+        "statuses": [
+            status.value
+            for status in sorted({result.status for result in results}, key=str)
+        ],
+        "status_reasons": list(
             sorted(
                 {
                     result.status_reason
@@ -227,24 +128,29 @@ def _catalog_entry(
                 }
             )
         ),
-        invocation_count=len(results),
-        evidence_count=len(evidence),
-        plate_ids=tuple(sorted({item for scope in scopes for item in scope.plate_ids})),
-        well_roles=tuple(
-            sorted(
+        "invocation_count": len(results),
+        "evidence_count": len(evidence),
+        "plate_ids": list(
+            sorted({item for scope in scopes for item in scope.plate_ids})
+        ),
+        "well_roles": [
+            role.value
+            for role in sorted(
                 {item for scope in scopes for item in scope.well_roles},
                 key=lambda role: role.value,
             )
-        ),
-        treatments=tuple(
+        ],
+        "treatments": list(
             sorted({item for scope in scopes for item in scope.treatments})
         ),
-        metric_prefixes=_metric_prefixes(evidence),
-        warnings=_unique_warnings(results),
-        limitations=tuple(
+        "metric_prefixes": list(_metric_prefixes(evidence)),
+        "warnings": [
+            warning.model_dump(mode="json") for warning in _unique_warnings(results)
+        ],
+        "limitations": list(
             sorted({item for result in results for item in result.limitations})
         ),
-        attachment_names=tuple(
+        "attachment_names": list(
             sorted(
                 {
                     attachment.name
@@ -253,11 +159,11 @@ def _catalog_entry(
                 }
             )
         ),
-    )
+    }
 
 
-def list_diagnostic_results(baseline: BaselineReport) -> DiagnosticResultList:
-    """List only allowlisted diagnostic result families in canonical order."""
+def _catalog_entries(baseline: BaselineReport) -> list[JsonObject]:
+    """Build the canonical model-visible catalog from a validated baseline."""
     present = {result.tool_name for result in baseline.tool_results}
     unexpected = sorted(present - ALLOWED_DIAGNOSTIC_TOOLS)
     if unexpected:
@@ -267,17 +173,24 @@ def list_diagnostic_results(baseline: BaselineReport) -> DiagnosticResultList:
     grouped: dict[str, list[ScientificToolResult]] = defaultdict(list)
     for result in baseline.tool_results:
         grouped[result.tool_name].append(result)
-    entries = tuple(
+    return [
         _catalog_entry(tool_name, tuple(grouped[tool_name]))
         for tool_name in sorted(grouped)
-    )
-    return DiagnosticResultList(case_id=baseline.case_id, results=entries)
+    ]
+
+
+def list_diagnostic_results(baseline: BaselineReport) -> JsonObject:
+    """List only allowlisted diagnostic result families in canonical order."""
+    return {
+        "case_id": baseline.case_id,
+        "results": _catalog_entries(baseline),
+    }
 
 
 def build_agent_briefing(
     case: InvestigatorCase,
     baseline: BaselineReport,
-) -> AgentBriefing:
+) -> JsonObject:
     """Project public inputs and deterministic summaries into compact context."""
     _ensure_public_pair(case, baseline)
     plate_metadata = {plate.plate_id: plate for plate in case.metadata.plates}
@@ -286,59 +199,66 @@ def build_agent_briefing(
     )
     if missing_metadata:
         raise ValueError(f"design plates lack public metadata: {missing_metadata}")
-    plates = tuple(
-        PlateBriefing(
-            plate_id=plate.plate_id,
-            batch_id=plate_metadata[plate.plate_id].batch_id,
-            operator_label=plate_metadata[plate.plate_id].operator_label,
-            run_date=plate_metadata[plate.plate_id].run_date,
-            instrument_label=plate_metadata[plate.plate_id].instrument_label,
-            plate_format=plate.plate_format,
-            observed_well_count=plate.observed_well_count,
-            expected_well_count=plate.expected_well_count,
-            well_role_counts=plate.role_counts,
-            missing_well_count=len(plate.missing_wells),
-            unusable_nonempty_measurement_count=(
+    plates: list[JsonValue] = [
+        {
+            "plate_id": plate.plate_id,
+            "batch_id": plate_metadata[plate.plate_id].batch_id,
+            "operator_label": plate_metadata[plate.plate_id].operator_label,
+            "run_date": (
+                plate_metadata[plate.plate_id].run_date.isoformat()
+                if plate_metadata[plate.plate_id].run_date is not None
+                else None
+            ),
+            "instrument_label": plate_metadata[plate.plate_id].instrument_label,
+            "plate_format": plate.plate_format.value,
+            "observed_well_count": plate.observed_well_count,
+            "expected_well_count": plate.expected_well_count,
+            "well_role_counts": {
+                role.value: count for role, count in plate.role_counts.items()
+            },
+            "missing_well_count": len(plate.missing_wells),
+            "unusable_nonempty_measurement_count": (
                 plate.missing_measurement_count
                 + plate.null_measurement_count
                 + plate.nonfinite_measurement_count
             ),
-            empty_well_count=plate.empty_well_count,
-            missing_design_annotation_count=plate.missing_design_annotation_count,
-            geometry_inference_warning=plate.geometry_inference_warning,
-        )
+            "empty_well_count": plate.empty_well_count,
+            "missing_design_annotation_count": plate.missing_design_annotation_count,
+            "geometry_inference_warning": plate.geometry_inference_warning,
+        }
         for plate in sorted(case.design.plates, key=lambda item: item.plate_id)
-    )
-    treatments = tuple(
-        TreatmentBriefing(
-            treatment=series.treatment,
-            dose_unit=series.dose_unit,
-            doses=series.doses,
-        )
+    ]
+    treatments: list[JsonValue] = [
+        {
+            "treatment": series.treatment,
+            "dose_unit": series.dose_unit,
+            "doses": list(series.doses),
+        }
         for series in sorted(
             case.design.treatment_dose_series,
             key=lambda item: (item.treatment, item.dose_unit or ""),
         )
-    )
-    catalog = list_diagnostic_results(baseline)
-    return AgentBriefing(
-        case_id=case.case_id,
-        assay_type=case.metadata.assay_type,
-        signal_direction=case.metadata.signal_direction,
-        problem_statement=case.problem_statement,
-        protocol=case.protocol,
-        plates=plates,
-        treatments=treatments,
-        capabilities=case.design.capabilities,
-        findings=tuple(
-            sorted(
+    ]
+    return {
+        "briefing_version": BRIEFING_VERSION,
+        "case_id": case.case_id,
+        "assay_type": case.metadata.assay_type.value,
+        "signal_direction": case.metadata.signal_direction.value,
+        "problem_statement": case.problem_statement,
+        "protocol": case.protocol,
+        "plates": plates,
+        "treatments": treatments,
+        "capabilities": case.design.capabilities.model_dump(mode="json"),
+        "findings": [
+            finding.model_dump(mode="json")
+            for finding in sorted(
                 baseline.findings,
                 key=lambda item: (item.category.value, item.finding_id),
             )
-        ),
-        diagnostic_results=catalog.results,
-        limitations=tuple(sorted(set(baseline.limitations))),
-    )
+        ],
+        "diagnostic_results": _catalog_entries(baseline),
+        "limitations": list(sorted(set(baseline.limitations))),
+    }
 
 
 def _validate_maximum(value: int, *, name: str) -> None:
@@ -375,7 +295,19 @@ def inspect_diagnostic_result(
     if limit < 1 or limit > maximum_page_size:
         raise ValueError(f"limit must be between one and {maximum_page_size}")
     selected = _selected_results(baseline, tool_name)
-    catalog = _catalog_entry(tool_name, selected)
+    records = tuple(
+        sorted(
+            (record for result in selected for record in result.evidence),
+            key=lambda record: record.evidence_id,
+        )
+    )
+    scopes = tuple(result.scope for result in selected) + tuple(
+        record.scope for record in records
+    )
+    available_plate_ids = {item for scope in scopes for item in scope.plate_ids}
+    available_treatments = {
+        item for scope in scopes for item in scope.treatments
+    }
     normalized_prefix = _filter_value(metric_prefix, name="metric prefix")
     normalized_plate = _filter_value(plate_id, name="plate ID")
     normalized_treatment = _filter_value(treatment, name="treatment")
@@ -384,22 +316,15 @@ def inspect_diagnostic_result(
             r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*", normalized_prefix
         ) is None:
             raise ValueError("metric prefix has an invalid format")
-        if normalized_prefix not in catalog.metric_prefixes:
+        if normalized_prefix not in _metric_prefixes(records):
             raise ValueError(f"metric prefix is unavailable for {tool_name!r}")
-    if normalized_plate is not None and normalized_plate not in catalog.plate_ids:
+    if normalized_plate is not None and normalized_plate not in available_plate_ids:
         raise ValueError(f"plate scope is unavailable for {tool_name!r}")
     if (
         normalized_treatment is not None
-        and normalized_treatment not in catalog.treatments
+        and normalized_treatment not in available_treatments
     ):
         raise ValueError(f"treatment scope is unavailable for {tool_name!r}")
-
-    records = tuple(
-        sorted(
-            (record for result in selected for record in result.evidence),
-            key=lambda record: record.evidence_id,
-        )
-    )
     matches = tuple(
         record
         for record in records
@@ -418,11 +343,11 @@ def inspect_diagnostic_result(
     return EvidencePage(
         case_id=baseline.case_id,
         tool_name=tool_name,
-        filters=EvidenceFilters(
-            metric_prefix=normalized_prefix,
-            plate_id=normalized_plate,
-            treatment=normalized_treatment,
-        ),
+        filters={
+            "metric_prefix": normalized_prefix,
+            "plate_id": normalized_plate,
+            "treatment": normalized_treatment,
+        },
         total_tool_evidence_count=len(records),
         matched_count=len(matches),
         offset=offset,
@@ -430,10 +355,20 @@ def inspect_diagnostic_result(
         returned_count=len(page),
         has_more=offset + len(page) < len(matches),
         evidence=page,
-        statuses=catalog.statuses,
-        status_reasons=catalog.status_reasons,
-        warnings=catalog.warnings,
-        limitations=catalog.limitations,
+        statuses=tuple(sorted({result.status for result in selected}, key=str)),
+        status_reasons=tuple(
+            sorted(
+                {
+                    result.status_reason
+                    for result in selected
+                    if result.status_reason is not None
+                }
+            )
+        ),
+        warnings=_unique_warnings(selected),
+        limitations=tuple(
+            sorted({item for result in selected for item in result.limitations})
+        ),
     )
 
 
@@ -442,7 +377,7 @@ def resolve_evidence(
     evidence_ids: tuple[str, ...],
     *,
     maximum_ids: int = 10,
-) -> ResolvedEvidence:
+) -> JsonObject:
     """Resolve a small exact set of evidence IDs without exposing the full index."""
     _validate_maximum(maximum_ids, name="maximum evidence ID count")
     if not evidence_ids:
@@ -460,7 +395,9 @@ def resolve_evidence(
     unknown = sorted(set(evidence_ids) - set(by_id))
     if unknown:
         raise ValueError(f"unknown evidence IDs: {unknown}")
-    return ResolvedEvidence(
-        case_id=baseline.case_id,
-        evidence=tuple(by_id[item] for item in sorted(evidence_ids)),
-    )
+    return {
+        "case_id": baseline.case_id,
+        "evidence": [
+            by_id[item].model_dump(mode="json") for item in sorted(evidence_ids)
+        ],
+    }

@@ -47,8 +47,8 @@ def test_run_command_writes_validated_result_and_refuses_overwrite(
         (output / "trace.json").read_text(encoding="utf-8")
     )
     assert trace.status is RunStatus.SUCCESS
-    assert trace.runtime.model_tag == "qwen:test"
-    assert trace.runtime.ollama_base_url == "http://127.0.0.1:11434/v1"
+    assert trace.config.model_tag == "qwen:test"
+    assert trace.config.ollama_base_url == "http://127.0.0.1:11434/v1"
     assert (output / "investigation.json").is_file()
     assert (output / "baseline" / "report.json").is_file()
     assert "Wrote validated investigation" in capsys.readouterr().out

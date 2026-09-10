@@ -23,9 +23,7 @@ from experiment_failure_investigator.agent.contracts import (
     InvestigatorOutput,
 )
 from experiment_failure_investigator.agent.evidence import (
-    DiagnosticResultList,
     EvidencePage,
-    ResolvedEvidence,
     build_agent_briefing,
 )
 from experiment_failure_investigator.agent.investigator import (
@@ -105,9 +103,11 @@ def _run_inputs(
     case: InvestigatorCase,
     baseline: BaselineReport,
 ) -> tuple[InvestigatorDependencies, str, str]:
-    prompt = assemble_investigator_prompt(build_agent_briefing(case, baseline))
+    system_prompt, user_prompt = assemble_investigator_prompt(
+        build_agent_briefing(case, baseline)
+    )
     dependencies = InvestigatorDependencies(case=case, baseline=baseline)
-    return dependencies, prompt.system_prompt, prompt.user_prompt
+    return dependencies, system_prompt, user_prompt
 
 
 def _tool_returns(messages: list[ModelMessage]) -> list[ToolReturnPart]:
@@ -144,7 +144,8 @@ def test_test_model_runs_with_typed_dependencies_and_only_registered_tools(
     catalog_return = next(
         item for item in returns if item.tool_name == "list_diagnostic_results"
     )
-    assert isinstance(catalog_return.content, DiagnosticResultList)
+    assert isinstance(catalog_return.content, dict)
+    assert catalog_return.content["case_id"] == case.case_id
     assert any(
         isinstance(part, SystemPromptPart) and part.content == system_prompt
         for message in messages
@@ -213,9 +214,9 @@ def test_function_model_can_select_all_three_bounded_tools(
     assert result.output == expected
     assert selected_tools == [TOOL_NAMES]
     returns = {item.tool_name: item.content for item in _tool_returns(messages)}
-    assert isinstance(returns["list_diagnostic_results"], DiagnosticResultList)
+    assert isinstance(returns["list_diagnostic_results"], dict)
     assert isinstance(returns["inspect_diagnostic_result"], EvidencePage)
-    assert isinstance(returns["resolve_evidence"], ResolvedEvidence)
+    assert isinstance(returns["resolve_evidence"], dict)
 
 
 def test_semantically_invalid_tool_request_returns_typed_error(
@@ -329,7 +330,7 @@ def test_dependencies_and_agent_limits_fail_before_model_execution(
     with pytest.raises(ValueError, match="between zero"):
         build_investigator_agent(
             TestModel(),
-            system_prompt=load_system_prompt().content,
+            system_prompt=load_system_prompt(),
             output_validation_retries=4,
         )
 

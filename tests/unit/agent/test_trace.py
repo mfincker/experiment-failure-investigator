@@ -1,4 +1,4 @@
-"""Tests for stable prompt identity and machine-readable run traces."""
+"""Tests for the compact persisted Investigator trace."""
 
 from __future__ import annotations
 
@@ -14,17 +14,11 @@ from experiment_failure_investigator.agent.contracts import (
     InvestigatorOutput,
 )
 from experiment_failure_investigator.agent.trace import (
-    AgentUsage,
     InvestigationTrace,
-    ModelEvent,
-    ModelEventType,
-    RunFailure,
     RunFailureCode,
     RunStatus,
-    RuntimeSnapshot,
-    ToolEvent,
-    VersionRecord,
-    hash_json_payload,
+    TraceEvent,
+    TraceEventKind,
     hash_prompt,
     new_run_id,
 )
@@ -44,35 +38,34 @@ EVIDENCE_ID = "ev_" + "a" * 20
 
 
 def _output() -> InvestigatorOutput:
-    hypotheses = tuple(
-        FailureHypothesis(
-            rank=rank,
-            name=name,
-            proposed_mechanism=mechanism,
-            confidence=confidence,
-            supporting_evidence_ids=(EVIDENCE_ID,),
-            missing_evidence=("Independent preparation records",),
-            alternative_explanations=("Plate handling variation",),
-            falsification_check="Repeat with an independent preparation.",
-        )
-        for rank, name, mechanism, confidence in (
-            (
-                1,
-                "Control preparation variation",
-                "Control preparation may have reduced assay separation.",
-                ConfidenceCategory.MODERATE,
-            ),
-            (
-                2,
-                "Plate handling variation",
-                "Plate handling may have changed the observed control behavior.",
-                ConfidenceCategory.LOW,
-            ),
-        )
-    )
     return InvestigatorOutput(
         case_id=CASE_ID,
-        hypotheses=hypotheses,
+        hypotheses=tuple(
+            FailureHypothesis(
+                rank=rank,
+                name=name,
+                proposed_mechanism=mechanism,
+                confidence=confidence,
+                supporting_evidence_ids=(EVIDENCE_ID,),
+                missing_evidence=("Independent preparation records",),
+                alternative_explanations=("Plate handling variation",),
+                falsification_check="Repeat with an independent preparation.",
+            )
+            for rank, name, mechanism, confidence in (
+                (
+                    1,
+                    "Control preparation variation",
+                    "Control preparation may have reduced assay separation.",
+                    ConfidenceCategory.MODERATE,
+                ),
+                (
+                    2,
+                    "Plate handling variation",
+                    "Plate handling may have changed the observed control behavior.",
+                    ConfidenceCategory.LOW,
+                ),
+            )
+        ),
         overall_assessment="The control behavior warrants review.",
         remaining_uncertainty=("The physical origin remains unavailable.",),
         recommended_next_check="Repeat controls from an independent preparation.",
@@ -81,41 +74,7 @@ def _output() -> InvestigatorOutput:
     )
 
 
-def _events() -> tuple[tuple[ModelEvent, ...], tuple[ToolEvent, ...]]:
-    request = {"role": "user", "content": "Investigate the public evidence."}
-    arguments = {"tool_name": "summarize_controls", "limit": 5}
-    result = {"status": "success", "evidence_ids": [EVIDENCE_ID]}
-    response = {"role": "assistant", "status": "validated"}
-    return (
-        (
-            ModelEvent(
-                sequence=1,
-                event_type=ModelEventType.REQUEST,
-                payload=request,
-                payload_sha256=hash_json_payload(request),
-            ),
-            ModelEvent(
-                sequence=3,
-                event_type=ModelEventType.RESPONSE,
-                payload=response,
-                payload_sha256=hash_json_payload(response),
-            ),
-        ),
-        (
-            ToolEvent(
-                sequence=2,
-                tool_name="inspect_diagnostic_result",
-                arguments=arguments,
-                arguments_sha256=hash_json_payload(arguments),
-                result=result,
-                result_sha256=hash_json_payload(result),
-            ),
-        ),
-    )
-
-
 def _trace() -> InvestigationTrace:
-    model_events, tool_events = _events()
     return InvestigationTrace(
         run_id="run_" + "b" * 20,
         case_id=CASE_ID,
@@ -123,26 +82,39 @@ def _trace() -> InvestigationTrace:
         application_commit="c8cb8a6",
         python_version="3.12.0",
         pydantic_ai_version="2.38.0",
-        runtime=RuntimeSnapshot.from_config(
-            AgentRuntimeConfig(runtime_mode=RuntimeMode.MOCK),
-            prompt="Investigate only the supplied public evidence.",
-        ),
+        config=AgentRuntimeConfig(runtime_mode=RuntimeMode.MOCK),
+        prompt_sha256=hash_prompt("Investigate only the supplied public evidence."),
         baseline_report_version="1.0.0",
         heuristic_version="1.0.0",
-        tool_versions=(
-            VersionRecord(name="summarize_controls", version="1.0.0"),
+        tool_versions={"summarize_controls": "1.0.0"},
+        events=(
+            TraceEvent(
+                sequence=1,
+                kind=TraceEventKind.MODEL_REQUEST,
+                payload={"role": "user", "content": "Investigate public evidence."},
+            ),
+            TraceEvent(
+                sequence=2,
+                kind=TraceEventKind.TOOL,
+                tool_name="inspect_diagnostic_result",
+                payload={
+                    "arguments": {"tool_name": "summarize_controls", "limit": 5},
+                    "result": {"evidence_ids": [EVIDENCE_ID]},
+                },
+            ),
+            TraceEvent(
+                sequence=3,
+                kind=TraceEventKind.MODEL_RESPONSE,
+                payload={"role": "assistant", "status": "validated"},
+            ),
         ),
-        model_events=model_events,
-        tool_events=tool_events,
         status=RunStatus.SUCCESS,
         output=_output(),
-        usage=AgentUsage(
-            requests=2,
-            tool_calls=1,
-            input_tokens=100,
-            output_tokens=50,
-            total_tokens=150,
-        ),
+        request_count=2,
+        tool_call_count=1,
+        input_tokens=100,
+        output_tokens=50,
+        total_tokens=150,
         started_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
         duration_seconds=1.25,
     )
@@ -168,6 +140,7 @@ def test_successful_trace_round_trips_without_private_truth() -> None:
     trace = _trace()
     serialized = canonical_json(trace)
 
+    assert trace.trace_version == "2.0.0"
     assert InvestigationTrace.model_validate_json(serialized) == trace
     for private_name in (
         "planted_failure_mode",
@@ -179,48 +152,33 @@ def test_successful_trace_round_trips_without_private_truth() -> None:
         assert private_name not in serialized
 
 
-def test_event_payload_hashes_are_verified() -> None:
-    request = {"role": "user"}
-    with pytest.raises(ValidationError, match="payload hash"):
-        ModelEvent(
+def test_event_shape_and_order_are_validated() -> None:
+    with pytest.raises(ValidationError, match="require a tool name"):
+        TraceEvent(sequence=1, kind=TraceEventKind.TOOL, payload={})
+    with pytest.raises(ValidationError, match="must not include a tool name"):
+        TraceEvent(
             sequence=1,
-            event_type=ModelEventType.REQUEST,
-            payload=request,
-            payload_sha256="0" * 64,
+            kind=TraceEventKind.MODEL_REQUEST,
+            tool_name="unexpected",
+            payload={},
         )
 
-    with pytest.raises(ValidationError, match="argument hash"):
-        ToolEvent(
-            sequence=1,
-            tool_name="resolve_evidence",
-            arguments={},
-            arguments_sha256="0" * 64,
-            result={},
-            result_sha256=hash_json_payload({}),
-        )
-
-
-def test_trace_requires_contiguous_global_event_sequence() -> None:
     values = _trace().model_dump(mode="python")
-    values["tool_events"][0]["sequence"] = 4
-
-    with pytest.raises(ValidationError, match="unique and contiguous"):
+    values["events"][1]["sequence"] = 4
+    with pytest.raises(ValidationError, match="ordered and contiguous"):
         InvestigationTrace.model_validate(values)
 
 
 def test_trace_terminal_states_are_mutually_exclusive() -> None:
     success = _trace().model_dump(mode="python")
-    success["failure"] = RunFailure(
-        code=RunFailureCode.INTERNAL_ERROR,
-        detail="Sanitized internal failure.",
-    )
+    success["failure_code"] = RunFailureCode.INTERNAL_ERROR
+    success["failure_detail"] = "Sanitized internal failure."
     with pytest.raises(ValidationError, match="forbid failure"):
         InvestigationTrace.model_validate(success)
 
     failed = _trace().model_dump(mode="python")
     failed["status"] = RunStatus.FAILED
     failed["output"] = None
-    failed["failure"] = None
     with pytest.raises(ValidationError, match="require failure"):
         InvestigationTrace.model_validate(failed)
 
@@ -237,44 +195,41 @@ def test_trace_rejects_wrong_output_case_and_naive_time() -> None:
         InvestigationTrace.model_validate(naive)
 
 
-def test_trace_rejects_usage_beyond_configured_budgets() -> None:
+def test_trace_rejects_invalid_usage_and_tool_versions() -> None:
     values = _trace().model_dump(mode="python")
-    values["usage"]["requests"] = 5
-
+    values["request_count"] = 5
     with pytest.raises(ValidationError, match="requests exceed"):
         InvestigationTrace.model_validate(values)
 
-    token_values = _trace().model_dump(mode="python")
-    token_values["usage"]["input_tokens"] = 40000
-    token_values["usage"]["total_tokens"] = 40050
-    with pytest.raises(ValidationError, match="input tokens exceed"):
-        InvestigationTrace.model_validate(token_values)
+    inconsistent = _trace().model_dump(mode="python")
+    inconsistent["total_tokens"] = 200
+    with pytest.raises(ValidationError, match="input plus output"):
+        InvestigationTrace.model_validate(inconsistent)
+
+    paid = _trace().model_dump(mode="python")
+    paid["monetary_provider_cost_usd"] = 0.01
+    with pytest.raises(ValidationError, match="cost as zero"):
+        InvestigationTrace.model_validate(paid)
+
+    version = _trace().model_dump(mode="python")
+    version["tool_versions"] = {"bad-name": "1.0.0"}
+    with pytest.raises(ValidationError, match="tool-version name"):
+        InvestigationTrace.model_validate(version)
 
 
 def test_budget_failure_trace_may_record_measured_token_overage() -> None:
     values = _trace().model_dump(mode="python")
-    values["status"] = RunStatus.FAILED
-    values["output"] = None
-    values["failure"] = RunFailure(
-        code=RunFailureCode.BUDGET_EXHAUSTED,
-        detail="Provider-reported token use crossed the configured limit.",
+    values.update(
+        {
+            "status": RunStatus.FAILED,
+            "output": None,
+            "failure_code": RunFailureCode.BUDGET_EXHAUSTED,
+            "failure_detail": "Provider-reported token use crossed the limit.",
+            "input_tokens": 40000,
+            "total_tokens": 40050,
+        }
     )
-    values["usage"]["input_tokens"] = 40000
-    values["usage"]["total_tokens"] = 40050
 
     trace = InvestigationTrace.model_validate(values)
 
-    assert trace.usage.input_tokens == 40000
-
-
-def test_usage_rejects_inconsistent_tokens_or_nonzero_local_cost() -> None:
-    with pytest.raises(ValidationError, match="input plus output"):
-        AgentUsage(
-            requests=1,
-            tool_calls=0,
-            input_tokens=10,
-            output_tokens=5,
-            total_tokens=20,
-        )
-    with pytest.raises(ValidationError, match="cost as zero"):
-        AgentUsage(requests=1, tool_calls=0, monetary_provider_cost_usd=0.01)
+    assert trace.input_tokens == 40000

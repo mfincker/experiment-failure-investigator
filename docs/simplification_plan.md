@@ -197,7 +197,14 @@ Implementation status:
 - Step 1 is implemented for review. The normal CLI now reaches the existing
   controller with local Ollama configuration, uses an opaque default run path,
   refuses overwrite, and is covered end to end by an offline replay model.
-- Steps 2–5 remain pending.
+- Step 2A is implemented for review. Briefing, catalog, resolution, and prompt
+  assembly now use direct JSON and string values; nine internal Pydantic models
+  were removed while preserving the reviewed prompt and tool-payload hashes.
+- Step 2B is implemented for review. Eight specialized controller and trace
+  models were replaced by one `RunResult` dataclass, one ordered `TraceEvent`
+  model, and flattened trace fields. `AgentRuntimeConfig` is embedded directly,
+  redundant payload hashes were removed, and the trace schema is now `2.0.0`.
+- Steps 3–5 remain pending.
 
 ### Step 0 — Preserve and verify the starting point
 

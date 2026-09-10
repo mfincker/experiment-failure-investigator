@@ -16,9 +16,8 @@ from experiment_failure_investigator.agent.contracts import (
 )
 from experiment_failure_investigator.agent.evidence import (
     HARD_MAX_EVIDENCE_RECORDS,
-    DiagnosticResultList,
     EvidencePage,
-    ResolvedEvidence,
+    JsonObject,
     inspect_diagnostic_result as inspect_frozen_result,
     list_diagnostic_results as list_frozen_results,
     resolve_evidence as resolve_frozen_evidence,
@@ -50,9 +49,9 @@ class EvidenceToolError(AgentStrictModel):
     detail: str = Field(min_length=1)
 
 
-CatalogToolResponse = DiagnosticResultList | EvidenceToolError
+CatalogToolResponse = JsonObject | EvidenceToolError
 InspectToolResponse = EvidencePage | EvidenceToolError
-ResolveToolResponse = ResolvedEvidence | EvidenceToolError
+ResolveToolResponse = JsonObject | EvidenceToolError
 
 
 @dataclass(frozen=True)

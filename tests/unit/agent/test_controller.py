@@ -25,7 +25,11 @@ from experiment_failure_investigator.agent.contracts import (
     InvestigatorOutput,
 )
 from experiment_failure_investigator.agent.controller import run_investigation
-from experiment_failure_investigator.agent.trace import RunFailureCode, RunStatus
+from experiment_failure_investigator.agent.trace import (
+    RunFailureCode,
+    RunStatus,
+    TraceEventKind,
+)
 from experiment_failure_investigator.analysis.results import canonical_json
 from experiment_failure_investigator.benchmark.adapter import load_investigator_case
 from experiment_failure_investigator.reporting.baseline import (
@@ -162,18 +166,21 @@ async def test_success_writes_validated_output_baseline_and_trace(
 
     assert run.trace.status is RunStatus.SUCCESS
     assert run.trace.output == expected_output
-    assert run.trace.failure is None
-    assert run.trace.usage.requests == 2
-    assert run.trace.usage.tool_calls == 1
-    assert len(run.trace.tool_events) == 1
-    assert run.trace.tool_events[0].tool_name == "list_diagnostic_results"
-    assert run.artifacts.investigation_json is not None
-    assert run.artifacts.investigation_json.read_text() == canonical_json(
+    assert run.trace.failure_code is None
+    assert run.trace.request_count == 2
+    assert run.trace.tool_call_count == 1
+    tool_events = [
+        event for event in run.trace.events if event.kind is TraceEventKind.TOOL
+    ]
+    assert len(tool_events) == 1
+    assert tool_events[0].tool_name == "list_diagnostic_results"
+    assert run.investigation_json is not None
+    assert run.investigation_json.read_text() == canonical_json(
         expected_output
     )
-    assert run.artifacts.trace_json.read_text() == canonical_json(run.trace)
+    assert run.trace_json.read_text() == canonical_json(run.trace)
     baseline = BaselineReport.model_validate_json(
-        run.artifacts.baseline_json.read_text()
+        run.baseline_json.read_text()
     )
     assert canonical_json(baseline) == canonical_json(expected_baseline)
     assert {
@@ -185,7 +192,7 @@ async def test_success_writes_validated_output_baseline_and_trace(
     assert all(settings["temperature"] == 0.25 for settings in nonempty_settings)
     assert all(settings["max_tokens"] == 512 for settings in nonempty_settings)
     assert all(settings["timeout"] == 0.75 for settings in nonempty_settings)
-    trace_payload = run.artifacts.trace_json.read_text()
+    trace_payload = run.trace_json.read_text()
     assert "weak_controls_obvious" not in trace_payload
     assert '"failure_mode"' not in trace_payload
 
@@ -224,12 +231,11 @@ async def test_request_budget_failure_writes_trace_but_no_investigation(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.BUDGET_EXHAUSTED
+    assert run.trace.failure_code is RunFailureCode.BUDGET_EXHAUSTED
     assert run.trace.output is None
-    assert run.artifacts.investigation_json is None
-    assert not (run.artifacts.output_directory / "investigation.json").exists()
-    assert run.artifacts.trace_json.exists()
+    assert run.investigation_json is None
+    assert not (run.output_directory / "investigation.json").exists()
+    assert run.trace_json.exists()
 
 
 @pytest.mark.anyio
@@ -263,10 +269,9 @@ async def test_tool_call_budget_is_enforced_before_excess_tools_run(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.BUDGET_EXHAUSTED
-    assert run.trace.usage.tool_calls <= 1
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.BUDGET_EXHAUSTED
+    assert run.trace.tool_call_count <= 1
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -282,9 +287,8 @@ async def test_token_budget_exhaustion_is_a_typed_failure(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.BUDGET_EXHAUSTED
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.BUDGET_EXHAUSTED
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -318,10 +322,9 @@ async def test_exhausted_output_retry_is_a_typed_validation_failure(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.VALIDATION_FAILED
+    assert run.trace.failure_code is RunFailureCode.VALIDATION_FAILED
     assert run.trace.output is None
-    assert run.artifacts.investigation_json is None
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -341,9 +344,8 @@ async def test_whole_run_timeout_is_a_typed_failure(tmp_path: Path) -> None:
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.TIMEOUT
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.TIMEOUT
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -362,9 +364,8 @@ async def test_provider_error_is_a_distinct_typed_failure(tmp_path: Path) -> Non
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.PROVIDER_UNAVAILABLE
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.PROVIDER_UNAVAILABLE
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -402,8 +403,7 @@ async def test_missing_local_model_fails_preflight_without_model_request(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.MODEL_MISSING
-    assert run.trace.usage.requests == 0
+    assert run.trace.failure_code is RunFailureCode.MODEL_MISSING
+    assert run.trace.request_count == 0
     assert model_requested is False
-    assert run.artifacts.investigation_json is None
+    assert run.investigation_json is None

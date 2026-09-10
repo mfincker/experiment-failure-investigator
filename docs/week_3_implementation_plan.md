@@ -210,17 +210,18 @@ return a typed run failure; they do not fall back to unvalidated prose.
 
 ### `InvestigationTrace`
 
-Separate stable scientific content from runtime telemetry. Record:
+Keep one compact persisted run record, with one ordered `TraceEvent` shape rather
+than separate models for each internal message or metadata group. Record:
 
 - trace schema version and opaque run ID;
 - opaque case ID and public artifact hashes;
 - application commit, Python version, Pydantic AI version;
-- runtime mode, provider, model tag, base URL, and sampling settings;
+- the validated runtime configuration directly;
 - prompt version and SHA-256 hash;
 - deterministic tool and report versions;
-- validated model requests, tool calls, bounded tool returns, and final output;
-- validation failures and retry count;
-- request/tool-call/token usage reported by the framework;
+- ordered model, validation-retry, and tool events, plus the final output;
+- flattened failure details and retry count;
+- flattened request/tool-call/token usage reported by the framework;
 - elapsed time; and
 - monetary provider cost, recorded as zero for local Ollama while making no claim
   about electricity or hardware cost.
@@ -261,9 +262,10 @@ Implementation status:
 - Step 1 is implemented and committed. The local Pydantic AI dependency targets
   the tested `2.x` API; configuration and Ollama preflight are typed, bounded,
   loopback-only, and covered without live model calls.
-- Step 2 is implemented and committed, including strict hypothesis, investigator
-  output, run trace, event-integrity, usage, evidence-graph validation, prompt
-  hashing, and schema-generation contracts.
+- Step 2 was implemented and committed. On the `simplification` branch, its run
+  trace was subsequently reduced to the persisted trace plus one event model,
+  direct runtime configuration, and flattened failure and usage fields. Prompt
+  hashing, evidence-graph validation, and schema-generation contracts remain.
 - Step 3 is implemented and committed. Agent context is a compact projection of
   public case context and the deterministic baseline; evidence access is
   allowlisted, read-only, filtered, paginated, and capped by runtime limits.
@@ -318,8 +320,8 @@ versus what application configuration and preflight code own.
 
 Actions:
 
-- Implement confidence, hypothesis, investigator-output, run-status, model-event,
-  tool-event, usage, and trace models.
+- Implement strict investigator-output models and a compact run trace with one
+  ordered event shape.
 - Implement cross-validation against a `BaselineReport` evidence index.
 - Add canonical JSON serialization and stable prompt hashing.
 - Generate and commit JSON Schemas for the investigator output and trace.

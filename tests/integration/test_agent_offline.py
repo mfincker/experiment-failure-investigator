@@ -22,7 +22,11 @@ from experiment_failure_investigator.agent.replay import (
     build_replay_model,
     load_replay_fixture,
 )
-from experiment_failure_investigator.agent.trace import RunFailureCode, RunStatus
+from experiment_failure_investigator.agent.trace import (
+    RunFailureCode,
+    RunStatus,
+    TraceEventKind,
+)
 
 CASE_DIRECTORY = Path("cases/weak_controls_obvious")
 REPLAY_PATH = Path("tests/fixtures/agent/replay_week3_v1.json")
@@ -56,7 +60,7 @@ async def test_test_model_exercises_complete_controller_without_tools(
 
     assert run.trace.status is RunStatus.SUCCESS
     assert run.trace.output == expected
-    assert run.trace.tool_events == ()
+    assert all(event.kind is not TraceEventKind.TOOL for event in run.trace.events)
 
 
 @pytest.mark.anyio
@@ -88,11 +92,13 @@ async def test_replay_scenarios_exercise_expected_agent_path(
     model.assert_complete()
     assert run.trace.status is RunStatus.SUCCESS
     assert run.trace.output == fixture.turns[-1].respond.output
-    assert run.trace.usage.tool_calls == expected_tool_calls
-    assert len(run.trace.tool_events) == expected_tool_calls
-    assert run.trace.failure is None
+    assert run.trace.tool_call_count == expected_tool_calls
+    assert sum(
+        event.kind is TraceEventKind.TOOL for event in run.trace.events
+    ) == expected_tool_calls
+    assert run.trace.failure_code is None
     retries = sum(
-        event.event_type == "validation_retry" for event in run.trace.model_events
+        event.kind is TraceEventKind.VALIDATION_RETRY for event in run.trace.events
     )
     assert retries == expected_retries
 
@@ -121,11 +127,11 @@ async def test_replaying_same_fixture_preserves_scientific_output(
     first_model.assert_complete()
     second_model.assert_complete()
     assert first.trace.output == second.trace.output
-    assert first.artifacts.investigation_json is not None
-    assert second.artifacts.investigation_json is not None
+    assert first.investigation_json is not None
+    assert second.investigation_json is not None
     assert (
-        first.artifacts.investigation_json.read_bytes()
-        == second.artifacts.investigation_json.read_bytes()
+        first.investigation_json.read_bytes()
+        == second.investigation_json.read_bytes()
     )
 
 
@@ -145,10 +151,9 @@ async def test_replay_can_exercise_post_response_token_budget(
 
     model.assert_complete()
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.BUDGET_EXHAUSTED
-    assert run.trace.usage.input_tokens == 40000
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.BUDGET_EXHAUSTED
+    assert run.trace.input_tokens == 40000
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -180,10 +185,10 @@ async def test_replay_transition_mismatch_fails_without_fallback(
 
     assert model.consumed_turns == 0
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.INTERNAL_ERROR
-    assert "ReplayMismatchError" in run.trace.failure.detail
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.INTERNAL_ERROR
+    assert run.trace.failure_detail is not None
+    assert "ReplayMismatchError" in run.trace.failure_detail
+    assert run.investigation_json is None
 
 
 @pytest.mark.anyio
@@ -201,11 +206,11 @@ async def test_real_provider_request_is_disabled_in_default_suite(
     )
 
     assert run.trace.status is RunStatus.FAILED
-    assert run.trace.failure is not None
-    assert run.trace.failure.code is RunFailureCode.INTERNAL_ERROR
-    assert "ALLOW_MODEL_REQUESTS is False" in run.trace.failure.detail
-    assert run.trace.usage.requests == 0
-    assert run.artifacts.investigation_json is None
+    assert run.trace.failure_code is RunFailureCode.INTERNAL_ERROR
+    assert run.trace.failure_detail is not None
+    assert "ALLOW_MODEL_REQUESTS is False" in run.trace.failure_detail
+    assert run.trace.request_count == 0
+    assert run.investigation_json is None
 
 
 def test_replay_fixture_contains_no_private_benchmark_truth() -> None:

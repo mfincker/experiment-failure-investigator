@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import platform
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib.metadata import version as package_version
 from pathlib import Path
@@ -39,7 +40,6 @@ from experiment_failure_investigator.agent.config import (
     preflight_ollama,
 )
 from experiment_failure_investigator.agent.contracts import (
-    AgentStrictModel,
     InvestigatorOutput,
     validate_output_against_baseline,
 )
@@ -49,22 +49,14 @@ from experiment_failure_investigator.agent.investigator import (
     InvestigatorDependencies,
     build_investigator_agent,
 )
-from experiment_failure_investigator.agent.prompts import (
-    AssembledPrompt,
-    assemble_investigator_prompt,
-)
+from experiment_failure_investigator.agent.prompts import assemble_investigator_prompt
 from experiment_failure_investigator.agent.trace import (
-    AgentUsage,
     InvestigationTrace,
-    ModelEvent,
-    ModelEventType,
-    RunFailure,
     RunFailureCode,
     RunStatus,
-    RuntimeSnapshot,
-    ToolEvent,
-    VersionRecord,
-    hash_json_payload,
+    TraceEvent,
+    TraceEventKind,
+    hash_prompt,
     new_run_id,
 )
 from experiment_failure_investigator.analysis.contracts import PublicArtifactHashes
@@ -79,21 +71,16 @@ from experiment_failure_investigator.reporting.baseline import (
 _JSON_VALUE_ADAPTER = TypeAdapter(JsonValue)
 
 
-class InvestigationArtifacts(AgentStrictModel):
-    """Paths written during one controller execution."""
+@dataclass(frozen=True)
+class RunResult:
+    """Trace and artifact paths returned to the CLI after one run."""
 
+    trace: InvestigationTrace
     output_directory: Path
     baseline_json: Path
     baseline_markdown: Path
     trace_json: Path
     investigation_json: Path | None = None
-
-
-class InvestigationRun(AgentStrictModel):
-    """Typed terminal result returned by the single-run controller."""
-
-    trace: InvestigationTrace
-    artifacts: InvestigationArtifacts
 
 
 def _application_commit() -> str:
@@ -114,7 +101,7 @@ def _application_commit() -> str:
     return commit if commit else "unknown"
 
 
-def _tool_versions(baseline: BaselineReport) -> tuple[VersionRecord, ...]:
+def _tool_versions(baseline: BaselineReport) -> dict[str, str]:
     """Extract one consistent version for every deterministic diagnostic."""
     versions: dict[str, set[str]] = {}
     for result in baseline.tool_results:
@@ -124,10 +111,10 @@ def _tool_versions(baseline: BaselineReport) -> tuple[VersionRecord, ...]:
         raise ValueError(
             f"baseline contains inconsistent tool versions: {inconsistent}"
         )
-    return tuple(
-        VersionRecord(name=name, version=next(iter(versions[name])))
+    return {
+        name: next(iter(versions[name]))
         for name in sorted(versions)
-    )
+    }
 
 
 def _json_value(value: Any) -> JsonValue:
@@ -137,29 +124,26 @@ def _json_value(value: Any) -> JsonValue:
 
 def _trace_events(
     messages: list[ModelMessage],
-) -> tuple[tuple[ModelEvent, ...], tuple[ToolEvent, ...]]:
+) -> tuple[TraceEvent, ...]:
     """Convert captured framework messages into sanitized ordered trace events."""
     dumped = ModelMessagesTypeAdapter.dump_python(messages, mode="json")
-    model_events: list[ModelEvent] = []
-    tool_events: list[ToolEvent] = []
+    events: list[TraceEvent] = []
     tool_calls: dict[str, ToolCallPart] = {}
     sequence = 0
     for message, payload in zip(messages, dumped, strict=True):
         sequence += 1
-        event_type = ModelEventType.RESPONSE
+        event_kind = TraceEventKind.MODEL_RESPONSE
         if isinstance(message, ModelRequest):
-            event_type = (
-                ModelEventType.VALIDATION_RETRY
+            event_kind = (
+                TraceEventKind.VALIDATION_RETRY
                 if any(isinstance(part, RetryPromptPart) for part in message.parts)
-                else ModelEventType.REQUEST
+                else TraceEventKind.MODEL_REQUEST
             )
-        model_payload = _json_value(payload)
-        model_events.append(
-            ModelEvent(
+        events.append(
+            TraceEvent(
                 sequence=sequence,
-                event_type=event_type,
-                payload=model_payload,
-                payload_sha256=hash_json_payload(model_payload),
+                kind=event_kind,
+                payload=_json_value(payload),
             )
         )
         if isinstance(message, ModelResponse):
@@ -184,48 +168,39 @@ def _trace_events(
                 arguments = _json_value(call.args_as_dict(raise_if_invalid=True))
                 result = _json_value(part.content)
                 sequence += 1
-                tool_events.append(
-                    ToolEvent(
+                events.append(
+                    TraceEvent(
                         sequence=sequence,
+                        kind=TraceEventKind.TOOL,
                         tool_name=part.tool_name,
-                        arguments=arguments,
-                        arguments_sha256=hash_json_payload(arguments),
-                        result=result,
-                        result_sha256=hash_json_payload(result),
+                        payload={
+                            "arguments": arguments,
+                            "result": result,
+                        },
                     )
                 )
-    return tuple(model_events), tuple(tool_events)
+    return tuple(events)
 
 
-def _agent_usage(usage: RunUsage) -> AgentUsage:
-    """Project framework usage counters into the stable trace contract."""
-    return AgentUsage(
-        requests=usage.requests,
-        tool_calls=usage.tool_calls,
-        input_tokens=usage.input_tokens,
-        output_tokens=usage.output_tokens,
-        total_tokens=usage.total_tokens,
-        monetary_provider_cost_usd=0.0,
-    )
-
-
-def _failure(
-    code: RunFailureCode,
-    error: BaseException,
-    messages: list[ModelMessage],
-) -> RunFailure:
-    """Create a concise typed failure without retaining a traceback."""
-    retries = sum(
+def _validation_attempts(messages: list[ModelMessage]) -> int:
+    """Count framework retry messages in one captured exchange."""
+    return sum(
         isinstance(part, RetryPromptPart)
         for message in messages
         if isinstance(message, ModelRequest)
         for part in message.parts
     )
+
+
+def _failure_details(
+    code: RunFailureCode,
+    error: BaseException,
+) -> tuple[RunFailureCode, str]:
+    """Create a concise typed failure without retaining a traceback."""
     detail = str(error).strip() or type(error).__name__
-    return RunFailure(
-        code=code,
-        detail=f"{type(error).__name__}: {detail}"[:1000],
-        validation_attempts=retries,
+    return (
+        code,
+        f"{type(error).__name__}: {detail}"[:1000],
     )
 
 
@@ -242,30 +217,23 @@ def _classify_failure(error: BaseException) -> RunFailureCode:
     return RunFailureCode.INTERNAL_ERROR
 
 
-def _runtime_snapshot(
-    config: AgentRuntimeConfig,
-    prompt: AssembledPrompt,
-) -> RuntimeSnapshot:
-    """Build traceable runtime settings using the reviewed system prompt hash."""
-    return RuntimeSnapshot.from_config(config, prompt=prompt.system_prompt)
-
-
 def _build_trace(
     *,
     case_id: str,
     public_artifact_hashes: PublicArtifactHashes,
     baseline: BaselineReport,
     config: AgentRuntimeConfig,
-    prompt: AssembledPrompt,
+    system_prompt: str,
     messages: list[ModelMessage],
     usage: RunUsage,
     started_at: datetime,
     duration_seconds: float,
     output: InvestigatorOutput | None,
-    failure: RunFailure | None,
+    failure_code: RunFailureCode | None,
+    failure_detail: str | None,
+    validation_attempts: int,
 ) -> InvestigationTrace:
     """Assemble the terminal trace after success or a handled run failure."""
-    model_events, tool_events = _trace_events(messages)
     status = RunStatus.SUCCESS if output is not None else RunStatus.FAILED
     return InvestigationTrace(
         run_id=new_run_id(),
@@ -274,16 +242,23 @@ def _build_trace(
         application_commit=_application_commit(),
         python_version=platform.python_version(),
         pydantic_ai_version=package_version("pydantic-ai"),
-        runtime=_runtime_snapshot(config, prompt),
+        config=config,
+        prompt_sha256=hash_prompt(system_prompt),
         baseline_report_version=baseline.report_version,
         heuristic_version=baseline.heuristic_configuration.version,
         tool_versions=_tool_versions(baseline),
-        model_events=model_events,
-        tool_events=tool_events,
+        events=_trace_events(messages),
         status=status,
         output=output,
-        failure=failure,
-        usage=_agent_usage(usage),
+        failure_code=failure_code,
+        failure_detail=failure_detail,
+        validation_attempts=validation_attempts,
+        request_count=usage.requests,
+        tool_call_count=usage.tool_calls,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        total_tokens=usage.total_tokens,
+        monetary_provider_cost_usd=0.0,
         started_at=started_at,
         duration_seconds=duration_seconds,
     )
@@ -295,7 +270,7 @@ async def run_investigation(
     *,
     model: Model,
     config: AgentRuntimeConfig,
-) -> InvestigationRun:
+) -> RunResult:
     """Execute one bounded investigation and write only validated artifacts."""
     started_at = datetime.now(timezone.utc)
     started_clock = perf_counter()
@@ -308,7 +283,7 @@ async def run_investigation(
         baseline_directory,
     )
     briefing = build_agent_briefing(case, baseline)
-    prompt = assemble_investigator_prompt(
+    system_prompt, user_prompt = assemble_investigator_prompt(
         briefing,
         version=config.prompt_version,
     )
@@ -319,7 +294,7 @@ async def run_investigation(
     )
     agent = build_investigator_agent(
         model,
-        system_prompt=prompt.system_prompt,
+        system_prompt=system_prompt,
         output_validation_retries=config.output_validation_retries,
     )
     limits = UsageLimits(
@@ -336,7 +311,8 @@ async def run_investigation(
     )
     usage = RunUsage()
     output: InvestigatorOutput | None = None
-    failure: RunFailure | None = None
+    failure_code: RunFailureCode | None = None
+    failure_detail: str | None = None
     with capture_run_messages() as messages:
         try:
             preflight = preflight_ollama(
@@ -347,21 +323,21 @@ async def run_investigation(
                 OllamaPreflightStatus.NOT_REQUIRED,
                 OllamaPreflightStatus.READY,
             }:
-                code = (
+                failure_code = (
                     RunFailureCode.MODEL_MISSING
                     if preflight.status is OllamaPreflightStatus.MODEL_MISSING
                     else RunFailureCode.PROVIDER_UNAVAILABLE
                 )
-                failure = RunFailure(code=code, detail=preflight.detail)
+                failure_detail = preflight.detail
             remaining_seconds = config.run_timeout_seconds - (
                 perf_counter() - started_clock
             )
-            if failure is None and remaining_seconds <= 0:
+            if failure_code is None and remaining_seconds <= 0:
                 raise TimeoutError("run timeout elapsed during deterministic setup")
-            if failure is None:
+            if failure_code is None:
                 async with asyncio.timeout(remaining_seconds):
                     result = await agent.run(
-                        prompt.user_prompt,
+                        user_prompt,
                         deps=dependencies,
                         model_settings=settings,
                         usage_limits=limits,
@@ -369,20 +345,25 @@ async def run_investigation(
                     )
                 output = validate_output_against_baseline(result.output, baseline)
         except Exception as error:
-            failure = _failure(_classify_failure(error), error, messages)
+            failure_code, failure_detail = _failure_details(
+                _classify_failure(error),
+                error,
+            )
     duration_seconds = perf_counter() - started_clock
     trace = _build_trace(
         case_id=case.case_id,
         public_artifact_hashes=case.public_artifact_hashes,
         baseline=baseline,
         config=config,
-        prompt=prompt,
+        system_prompt=system_prompt,
         messages=messages,
         usage=usage,
         started_at=started_at,
         duration_seconds=duration_seconds,
         output=output,
-        failure=failure,
+        failure_code=failure_code,
+        failure_detail=failure_detail,
+        validation_attempts=_validation_attempts(messages),
     )
     investigation_path: Path | None = None
     if output is not None:
@@ -390,15 +371,11 @@ async def run_investigation(
         investigation_path.write_text(canonical_json(output), encoding="utf-8")
     trace_path = output_directory / "trace.json"
     trace_path.write_text(canonical_json(trace), encoding="utf-8")
-    return InvestigationRun(
+    return RunResult(
         trace=trace,
-        artifacts=InvestigationArtifacts.model_validate(
-            {
-                "output_directory": output_directory,
-                "baseline_json": baseline_json,
-                "baseline_markdown": baseline_markdown,
-                "investigation_json": investigation_path,
-                "trace_json": trace_path,
-            }
-        ),
+        output_directory=output_directory,
+        baseline_json=baseline_json,
+        baseline_markdown=baseline_markdown,
+        investigation_json=investigation_path,
+        trace_json=trace_path,
     )

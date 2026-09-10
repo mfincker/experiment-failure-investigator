@@ -16,7 +16,7 @@ from experiment_failure_investigator.agent.config import (
     load_runtime_config,
 )
 from experiment_failure_investigator.agent.controller import (
-    InvestigationRun,
+    RunResult,
     run_investigation,
 )
 from experiment_failure_investigator.agent.trace import RunStatus
@@ -226,7 +226,7 @@ async def _run_single_investigation(
     *,
     config: AgentRuntimeConfig,
     model: Model | None = None,
-) -> InvestigationRun:
+) -> RunResult:
     """Run one case through the existing controller with a safe output path."""
     case = load_investigator_case(case_path)
     run_directory = output or Path("runs") / case.case_id
@@ -280,26 +280,25 @@ def main(argv: Sequence[str] | None = None) -> None:
         except (FileExistsError, FileNotFoundError, ValueError) as error:
             parser.error(str(error))
         if run.trace.status is RunStatus.FAILED:
-            failure = run.trace.failure
-            if failure is None:
+            if run.trace.failure_code is None or run.trace.failure_detail is None:
                 parser.error(
                     f"investigation failed without a failure record; trace: "
-                    f"{run.artifacts.trace_json}"
+                    f"{run.trace_json}"
                 )
             parser.error(
-                f"investigation failed ({failure.code.value}): "
-                f"{failure.detail}; trace: {run.artifacts.trace_json}"
+                f"investigation failed ({run.trace.failure_code.value}): "
+                f"{run.trace.failure_detail}; trace: {run.trace_json}"
             )
-        investigation_path = run.artifacts.investigation_json
+        investigation_path = run.investigation_json
         if investigation_path is None:
             parser.error(
                 "investigation succeeded without writing its validated output; "
-                f"trace: {run.artifacts.trace_json}"
+                f"trace: {run.trace_json}"
             )
         print(
             "Wrote validated investigation to "
             f"{investigation_path} and trace to "
-            f"{run.artifacts.trace_json}"
+            f"{run.trace_json}"
         )
     elif args.command == "qc-batch":
         try:

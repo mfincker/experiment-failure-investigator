@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
+from typing import cast
 
 import pytest
 
 from experiment_failure_investigator.agent.evidence import (
     ALLOWED_DIAGNOSTIC_TOOLS,
+    JsonObject,
     build_agent_briefing,
     inspect_diagnostic_result,
     list_diagnostic_results,
@@ -42,10 +45,11 @@ def test_briefing_contains_compact_public_context_without_raw_tables(
     briefing = build_agent_briefing(case, baseline)
     payload = canonical_json(briefing)
 
-    assert briefing.case_id == case.case_id
-    assert briefing.capabilities == case.design.capabilities
-    assert briefing.problem_statement == case.problem_statement
-    assert {entry.tool_name for entry in briefing.diagnostic_results} == set(
+    assert briefing["case_id"] == case.case_id
+    assert briefing["capabilities"] == case.design.capabilities.model_dump(mode="json")
+    assert briefing["problem_statement"] == case.problem_statement
+    diagnostic_results = cast(list[JsonObject], briefing["diagnostic_results"])
+    assert {cast(str, entry["tool_name"]) for entry in diagnostic_results} == set(
         ALLOWED_DIAGNOSTIC_TOOLS
     )
     assert len(payload) < len(canonical_json(baseline)) * 0.1
@@ -70,22 +74,34 @@ def test_catalog_is_canonical_and_describes_statuses_scopes_and_metrics(
     _, baseline = case_and_baseline
 
     catalog = list_diagnostic_results(baseline)
-    entries = {entry.tool_name: entry for entry in catalog.results}
+    assert hashlib.sha256(canonical_json(catalog).encode("utf-8")).hexdigest() == (
+        "e07d4e4e42161fc7425d7403c3b8e3b90df31169c62bba6c52051408d36c5d4f"
+    )
+    results = cast(list[JsonObject], catalog["results"])
+    entries = {cast(str, entry["tool_name"]): entry for entry in results}
 
-    assert tuple(entry.tool_name for entry in catalog.results) == tuple(
+    assert tuple(cast(str, entry["tool_name"]) for entry in results) == tuple(
         sorted(ALLOWED_DIAGNOSTIC_TOOLS)
     )
-    assert entries["compare_batches"].statuses == ("not_applicable",)
-    assert entries["calculate_replicate_variability"].evidence_count > 25
-    assert "replicates" in entries[
-        "calculate_replicate_variability"
-    ].metric_prefixes
-    assert entries["generate_diagnostic_plot"].attachment_names == (
+    assert cast(list[str], entries["compare_batches"]["statuses"]) == [
+        "not_applicable"
+    ]
+    assert (
+        cast(int, entries["calculate_replicate_variability"]["evidence_count"]) > 25
+    )
+    metric_prefixes = cast(
+        list[str],
+        entries["calculate_replicate_variability"]["metric_prefixes"],
+    )
+    assert "replicates" in metric_prefixes
+    assert cast(
+        list[str], entries["generate_diagnostic_plot"]["attachment_names"]
+    ) == [
         "condition_residual",
         "control_distribution",
         "dose_response",
         "raw_signal",
-    )
+    ]
 
 
 def test_briefing_is_invariant_to_baseline_collection_order(
@@ -208,10 +224,15 @@ def test_exact_evidence_resolution_is_bounded_canonical_and_public(
 
     resolved = resolve_evidence(baseline, requested)
 
-    assert tuple(record.evidence_id for record in resolved.evidence) == tuple(
-        sorted(requested)
+    assert hashlib.sha256(canonical_json(resolved).encode("utf-8")).hexdigest() == (
+        "4d1a63dda408769a0e3e8d77fde5e8cb570fee9902b93e637df0e8a95ef43a77"
     )
-    assert all(record in baseline.evidence_index for record in resolved.evidence)
+    records = cast(list[JsonObject], resolved["evidence"])
+    assert tuple(
+        cast(str, record["evidence_id"]) for record in records
+    ) == tuple(sorted(requested))
+    baseline_ids = {record.evidence_id for record in baseline.evidence_index}
+    assert all(cast(str, record["evidence_id"]) in baseline_ids for record in records)
     assert '"path"' not in canonical_json(resolved)
 
 
